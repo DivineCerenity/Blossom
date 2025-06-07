@@ -1,7 +1,11 @@
 package com.example.blossom.ui.journal
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.blossom.data.JournalEntry
@@ -60,7 +67,7 @@ fun JournalListScreen(
                                 contentDescription = "Sort"
                             )
                         }
-                        
+
                         DropdownMenu(
                             expanded = showSortMenu,
                             onDismissRequest = { showSortMenu = false }
@@ -121,78 +128,110 @@ fun JournalListScreen(
                     .padding(padding)
             ) {
                 items(entries) { entry ->
-                    JournalEntryCard(
-                        entry = entry,
-                        onClick = { onNavigateToEditEntry(entry.id) }
-                    )
-                }
-            }
-        }
-    }
-}
+                    val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
 
-@Composable
-fun JournalEntryCard(
-    entry: JournalEntry,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Mood icon with background
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = when (entry.mood) {
-                            "Happy" -> HappyColor.copy(alpha = 0.2f)
-                            "Neutral" -> NeutralColor.copy(alpha = 0.2f)
-                            "Sad" -> SadColor.copy(alpha = 0.2f)
-                            "Excited" -> ExcitedColor.copy(alpha = 0.2f)
-                            "Grateful" -> GratefulColor.copy(alpha = 0.2f)
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        },
-                        shape = MaterialTheme.shapes.small
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                MoodIconDisplay(
-                    mood = entry.mood,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatTimestamp(entry.creationTimestamp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    if (entryToDelete != null) {
+                        AlertDialog(
+                            onDismissRequest = { viewModel.onDeletionCancelled() },
+                            title = { Text("Delete Entry") },
+                            text = { Text("Are you sure you want to delete this entry?") },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        viewModel.onDeletionConfirmed()
+                                    }
+                                ) {
+                                    Text("Delete")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { viewModel.onDeletionCancelled() }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onLongPress = { 
+                                        viewModel.onDeletionInitiated(entry) 
+                                    },
+                                    onTap = { 
+                                        onNavigateToEditEntry(entry.id) 
+                                    }
+                                )
+                            },
+                        shape = MaterialTheme.shapes.medium,
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                when (entry.mood) {
+                                                    "Happy" -> HappyColor.copy(alpha = 0.2f)
+                                                    "Neutral" -> NeutralColor.copy(alpha = 0.2f)
+                                                    "Sad" -> SadColor.copy(alpha = 0.2f)
+                                                    "Excited" -> ExcitedColor.copy(alpha = 0.2f)
+                                                    "Grateful" -> GratefulColor.copy(alpha = 0.2f)
+                                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                                },
+                                                when (entry.mood) {
+                                                    "Happy" -> HappyColor.copy(alpha = 0.1f)
+                                                    "Neutral" -> NeutralColor.copy(alpha = 0.1f)
+                                                    "Sad" -> SadColor.copy(alpha = 0.1f)
+                                                    "Excited" -> ExcitedColor.copy(alpha = 0.1f)
+                                                    "Grateful" -> GratefulColor.copy(alpha = 0.1f)
+                                                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                }
+                                            )
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                MoodIconDisplay(
+                                    mood = entry.mood,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = entry.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = formatTimestamp(entry.creationTimestamp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

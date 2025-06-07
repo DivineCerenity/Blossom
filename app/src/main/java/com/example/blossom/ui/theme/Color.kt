@@ -29,5 +29,5 @@ val Warning = Color(0xFFFFC107)  // Warning yellow
 val HappyColor = Color(0xFFFFD700)  // Gold
 val NeutralColor = Color(0xFF90A4AE)  // Blue gray
 val SadColor = Color(0xFF2196F3)  // Material Blue
-val ExcitedColor = Color(0xFFFF7043)  // Deep orange
-val GratefulColor = Color(0xFF66BB6A)  // Green
+val ExcitedColor = Color(0xFF66BB6A)  // Green
+val GratefulColor = Color(0xFFE91E63)  // Pink/Red

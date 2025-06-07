@@ -85,23 +85,27 @@ fun BlossomApp() {
                         navController.navigate(Screen.AddEditJournal.route)
                     },
                     onNavigateToEditEntry = { entryId ->
-                        navController.navigate("${Screen.AddEditJournal.route}?entryId=$entryId")
+                        navController.navigate("addEditJournal/$entryId")
                     }
                 )
             }
 
             composable(
-                route = Screen.AddEditJournal.route + "?entryId={entryId}",
-                arguments = listOf(navArgument("entryId") {
-                    type = NavType.IntType
-                    defaultValue = -1
-                })
+                route = "addEditJournal/{entryId}",
+                arguments = listOf(
+                    navArgument("entryId") {
+                        type = NavType.IntType
+                        defaultValue = -1
+                    }
+                )
             ) { backStackEntry ->
                 val entryId = backStackEntry.arguments?.getInt("entryId") ?: -1
                 val viewModel: JournalViewModel = hiltViewModel()
 
-                LaunchedEffect(key1 = true) {
-                    viewModel.loadEntry(entryId)
+                LaunchedEffect(key1 = entryId) {
+                    if (entryId != -1) {
+                        viewModel.loadEntry(entryId)
+                    }
                 }
 
                 AddEditJournalScreen(
