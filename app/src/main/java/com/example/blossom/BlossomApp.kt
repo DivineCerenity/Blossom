@@ -85,13 +85,15 @@ fun BlossomApp() {
                         navController.navigate(Screen.AddEditJournal.route)
                     },
                     onNavigateToEditEntry = { entryId ->
-                        navController.navigate("addEditJournal/$entryId")
+                        // Use Screen.AddEditJournal.route for consistency and append query parameter
+                        navController.navigate(Screen.AddEditJournal.route + "?entryId=$entryId")
                     }
                 )
             }
 
             composable(
-                route = "addEditJournal/{entryId}",
+                // Use Screen.AddEditJournal.route and append optional query parameter for entryId
+                route = Screen.AddEditJournal.route + "?entryId={entryId}",
                 arguments = listOf(
                     navArgument("entryId") {
                         type = NavType.IntType

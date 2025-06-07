@@ -20,11 +20,15 @@ class JournalListViewModel @Inject constructor(
     private val _sortOption = MutableStateFlow(SortOption.NEWEST)
     val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     val entries: StateFlow<List<JournalEntry>> = combine(
         journalRepository.getAllEntries(),
         _searchQuery,
         _sortOption
     ) { entries, query, sortOption ->
+        _isLoading.value = false
         entries
             .filter { entry ->
                 query.isEmpty() || entry.title.contains(query, ignoreCase = true) ||
@@ -50,6 +54,14 @@ class JournalListViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
+    init {
+        _isLoading.value = true
+        viewModelScope.launch {
+            journalRepository.getAllEntries().collect()
+            _isLoading.value = false
+        }
+    }
+
     // Holds the entry that the user has long-pressed to delete
     private val _entryToDelete = MutableStateFlow<JournalEntry?>(null)
     val entryToDelete = _entryToDelete.asStateFlow()
@@ -64,10 +76,12 @@ class JournalListViewModel @Inject constructor(
 
     fun onDeletionConfirmed() {
         viewModelScope.launch {
+            _isLoading.value = true
             entryToDelete.value?.let {
                 journalRepository.delete(it)
                 _entryToDelete.value = null
             }
+            _isLoading.value = false
         }
     }
 

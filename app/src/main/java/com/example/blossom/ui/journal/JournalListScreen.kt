@@ -43,6 +43,7 @@ fun JournalListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState(initial = "")
     var showSortMenu by remember { mutableStateOf(false) }
     var selectedSortOption by remember { mutableStateOf(SortOption.NEWEST) }
+    val isLoading by viewModel.isLoading.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -122,112 +123,133 @@ fun JournalListScreen(
                 )
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                items(entries) { entry ->
-                    val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    items(
+                        entries,
+                        key = { it.id }
+                    ) { entry ->
+                        val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
 
-                    if (entryToDelete != null) {
-                        AlertDialog(
-                            onDismissRequest = { viewModel.onDeletionCancelled() },
-                            title = { Text("Delete Entry") },
-                            text = { Text("Are you sure you want to delete this entry?") },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        viewModel.onDeletionConfirmed()
+                        if (entryToDelete != null) {
+                            AlertDialog(
+                                onDismissRequest = { viewModel.onDeletionCancelled() },
+                                title = { Text("Delete Entry") },
+                                text = { Text("Are you sure you want to delete this entry?") },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            viewModel.onDeletionConfirmed()
+                                        }
+                                    ) {
+                                        Text("Delete")
                                     }
-                                ) {
-                                    Text("Delete")
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { viewModel.onDeletionCancelled() }
+                                    ) {
+                                        Text("Cancel")
+                                    }
                                 }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { viewModel.onDeletionCancelled() }) {
-                                    Text("Cancel")
-                                }
-                            }
-                        )
-                    }
+                            )
+                        }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onLongPress = { 
-                                        viewModel.onDeletionInitiated(entry) 
-                                    },
-                                    onTap = { 
-                                        onNavigateToEditEntry(entry.id) 
-                                    }
-                                )
-                            },
-                        shape = MaterialTheme.shapes.medium,
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        AnimatedVisibility(
+                            visible = entry.id != viewModel.entryToDelete.value?.id,
+                            enter = fadeIn() + expandIn(),
+                            exit = fadeOut() + shrinkOut()
                         ) {
-                            Box(
+                            Card(
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(MaterialTheme.shapes.small)
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                when (entry.mood) {
-                                                    "Happy" -> HappyColor.copy(alpha = 0.2f)
-                                                    "Neutral" -> NeutralColor.copy(alpha = 0.2f)
-                                                    "Sad" -> SadColor.copy(alpha = 0.2f)
-                                                    "Excited" -> ExcitedColor.copy(alpha = 0.2f)
-                                                    "Grateful" -> GratefulColor.copy(alpha = 0.2f)
-                                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                                },
-                                                when (entry.mood) {
-                                                    "Happy" -> HappyColor.copy(alpha = 0.1f)
-                                                    "Neutral" -> NeutralColor.copy(alpha = 0.1f)
-                                                    "Sad" -> SadColor.copy(alpha = 0.1f)
-                                                    "Excited" -> ExcitedColor.copy(alpha = 0.1f)
-                                                    "Grateful" -> GratefulColor.copy(alpha = 0.1f)
-                                                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                                }
-                                            )
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onLongPress = { viewModel.onDeletionInitiated(entry) },
+                                            onTap = { onNavigateToEditEntry(entry.id) }
                                         )
-                                    ),
-                                contentAlignment = Alignment.Center
+                                    },
+                                shape = MaterialTheme.shapes.medium,
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                )
                             ) {
-                                MoodIconDisplay(
-                                    mood = entry.mood,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(MaterialTheme.shapes.small)
+                                            .background(
+                                                brush = Brush.linearGradient(
+                                                    colors = listOf(
+                                                        when (entry.mood) {
+                                                            "Happy" -> HappyColor.copy(alpha = 0.2f)
+                                                            "Neutral" -> NeutralColor.copy(alpha = 0.2f)
+                                                            "Sad" -> SadColor.copy(alpha = 0.2f)
+                                                            "Excited" -> ExcitedColor.copy(alpha = 0.2f)
+                                                            "Grateful" -> GratefulColor.copy(alpha = 0.2f)
+                                                            else -> MaterialTheme.colorScheme.surfaceVariant
+                                                        },
+                                                        when (entry.mood) {
+                                                            "Happy" -> HappyColor.copy(alpha = 0.1f)
+                                                            "Neutral" -> NeutralColor.copy(alpha = 0.1f)
+                                                            "Sad" -> SadColor.copy(alpha = 0.1f)
+                                                            "Excited" -> ExcitedColor.copy(alpha = 0.1f)
+                                                            "Grateful" -> GratefulColor.copy(alpha = 0.1f)
+                                                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                        }
+                                                    )
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        MoodIconDisplay(
+                                            mood = entry.mood,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
 
-                            Spacer(modifier = Modifier.width(16.dp))
+                                    Spacer(modifier = Modifier.width(16.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = entry.title,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = formatTimestamp(entry.creationTimestamp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = entry.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = formatTimestamp(entry.creationTimestamp),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -266,7 +288,5 @@ fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {
 }
 
 private fun formatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy, h:mm a", Locale.getDefault())
-    val date = Date(timestamp)
-    return sdf.format(date)
+    return SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(timestamp))
 }
