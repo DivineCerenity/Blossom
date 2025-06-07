@@ -5,8 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.data.JournalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,8 +14,19 @@ class JournalListViewModel @Inject constructor(
     private val journalRepository: JournalRepository
 ) : ViewModel() {
 
-    // Holds all entries from the database
-    val entries = journalRepository.getAllEntries()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    // Holds all entries from the database, filtered by search query
+    val entries = combine(
+        journalRepository.getAllEntries(),
+        searchQuery
+    ) { entries, query ->
+        entries.filter { entry ->
+            query.isEmpty() || entry.title.contains(query, ignoreCase = true) ||
+                    entry.content.contains(query, ignoreCase = true)
+        }
+    }
 
     // Holds the entry that the user has long-pressed to delete
     private val _entryToDelete = MutableStateFlow<JournalEntry?>(null)
@@ -37,5 +47,9 @@ class JournalListViewModel @Inject constructor(
                 _entryToDelete.value = null
             }
         }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
     }
 }

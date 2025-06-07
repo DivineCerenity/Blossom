@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.example.blossom.data.BlossomDatabase
 import com.example.blossom.data.JournalDao
 import com.example.blossom.data.JournalRepository
+import com.example.blossom.data.DailyHabitDao
+import com.example.blossom.data.DailyHabitRepository
 import com.example.blossom.network.ApiService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -31,7 +33,7 @@ object AppModule {
             BlossomDatabase::class.java,
             "blossom_database"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3)
             .build()
     }
 
@@ -45,8 +47,27 @@ object AppModule {
         return JournalRepository(journalDao)
     }
 
-    // --- Network Providers ---
+    @Provides
+    fun provideDailyHabitDao(db: BlossomDatabase): DailyHabitDao {
+        return db.dailyHabitDao()
+    }
 
+    @Provides
+    fun provideDailyHabitRepository(
+        dailyHabitDao: DailyHabitDao,
+        @ApplicationContext context: Context
+    ): DailyHabitRepository {
+        return DailyHabitRepository(dailyHabitDao, context)
+    }
+
+    // --- Context Provider ---
+    @Provides
+    @Singleton
+    fun provideContext(@ApplicationContext context: Context): Context {
+        return context
+    }
+
+    // --- Network Providers ---
     @Provides
     @Singleton
     fun provideMoshi(): Moshi {
@@ -57,11 +78,16 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApiService(moshi: Moshi): ApiService {
+    fun provideRetrofit(moshi: Moshi): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://beta.ourmanna.com/api/v1/")
+            .baseUrl("https://beta.ourmanna.com/api/v1/") // Updated to the correct API endpoint
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-            .create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiService(retrofit: Retrofit): ApiService {
+        return retrofit.create(ApiService::class.java)
     }
 }

@@ -8,9 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,10 +28,23 @@ fun JournalListScreen(
 ) {
     val entries by viewModel.entries.collectAsState(initial = emptyList())
     val entryToDelete by viewModel.entryToDelete.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     val showDeleteDialog = entryToDelete != null
 
     Scaffold(
+        topBar = {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChanged(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Search journal entries...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                singleLine = true
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onNavigateToAddEntry) {
                 Icon(Icons.Default.Add, contentDescription = "Add Journal Entry")
@@ -45,7 +56,12 @@ fun JournalListScreen(
             contentAlignment = Alignment.Center
         ) {
             if (entries.isEmpty()) {
-                Text("No journal entries yet. Tap '+' to add one!")
+                Text(
+                    if (searchQuery.isNotEmpty()) 
+                        "No entries match your search" 
+                    else 
+                        "No journal entries yet. Tap '+' to add one!"
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -121,7 +137,6 @@ fun JournalEntryCard(
         }
     }
 }
-
 
 @Composable
 fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {

@@ -2,6 +2,9 @@ package com.example.blossom.data
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * This is the main database class for the entire application.
@@ -10,13 +13,51 @@ import androidx.room.RoomDatabase
  * Hilt will use this blueprint in the AppModule to create the database instance.
  */
 @Database(
-    entities = [JournalEntry::class],
-    version = 2, // Keep this at 2
+    entities = [JournalEntry::class, DailyHabit::class],
+    version = 3,
     exportSchema = false
 )
+@TypeConverters(Converters::class)
 abstract class BlossomDatabase : RoomDatabase() {
-
-    // This abstract function tells Room that this database provides a JournalDao.
-    // Room will generate the necessary code for us. We don't need anything else.
     abstract fun journalDao(): JournalDao
+    abstract fun dailyHabitDao(): DailyHabitDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    ALTER TABLE daily_habits 
+                    ADD COLUMN reminderTime INTEGER NOT NULL DEFAULT 0
+                """)
+
+                database.execSQL("""
+                    ALTER TABLE daily_habits 
+                    ADD COLUMN streakCount INTEGER NOT NULL DEFAULT 0
+                """)
+
+                database.execSQL("""
+                    ALTER TABLE daily_habits 
+                    ADD COLUMN isEnabled INTEGER NOT NULL DEFAULT 1
+                """)
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create the daily_habits table if it doesn't exist
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS daily_habits (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        reminderTime INTEGER NOT NULL DEFAULT 0,
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        isEnabled INTEGER NOT NULL DEFAULT 1,
+                        streakCount INTEGER NOT NULL DEFAULT 0,
+                        lastCompletedDate INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+            }
+        }
+    }
 }
