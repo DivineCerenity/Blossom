@@ -18,6 +18,13 @@ import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class SortOption(val label: String) {
+    NEWEST("Newest First"),
+    OLDEST("Oldest First"),
+    HAPPY_FIRST("Happy First"),
+    SAD_FIRST("Sad First")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalListScreen(
@@ -27,6 +34,8 @@ fun JournalListScreen(
 ) {
     val entries by viewModel.entries.collectAsState(initial = emptyList())
     val searchQuery by viewModel.searchQuery.collectAsState(initial = "")
+    var showSortMenu by remember { mutableStateOf(false) }
+    var selectedSortOption by remember { mutableStateOf(SortOption.NEWEST) }
 
     Scaffold(
         topBar = {
@@ -38,6 +47,48 @@ fun JournalListScreen(
                     .padding(16.dp),
                 placeholder = { Text("Search journal entries...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                trailingIcon = {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(
+                                imageVector = when (selectedSortOption) {
+                                    SortOption.NEWEST -> Icons.Default.ArrowDownward
+                                    SortOption.OLDEST -> Icons.Default.ArrowUpward
+                                    SortOption.HAPPY_FIRST -> Icons.Default.SentimentVerySatisfied
+                                    SortOption.SAD_FIRST -> Icons.Default.SentimentVeryDissatisfied
+                                },
+                                contentDescription = "Sort"
+                            )
+                        }
+                        
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            SortOption.values().forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.label) },
+                                    onClick = {
+                                        selectedSortOption = option
+                                        showSortMenu = false
+                                        viewModel.onSortOptionSelected(option)
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = when (option) {
+                                                SortOption.NEWEST -> Icons.Default.ArrowDownward
+                                                SortOption.OLDEST -> Icons.Default.ArrowUpward
+                                                SortOption.HAPPY_FIRST -> Icons.Default.SentimentVerySatisfied
+                                                SortOption.SAD_FIRST -> Icons.Default.SentimentVeryDissatisfied
+                                            },
+                                            contentDescription = null
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
                 singleLine = true
             )
         },

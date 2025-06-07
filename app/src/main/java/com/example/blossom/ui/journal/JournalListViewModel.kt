@@ -15,18 +15,40 @@ class JournalListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // Holds all entries from the database, filtered by search query
-    val entries = combine(
+    private val _sortOption = MutableStateFlow(SortOption.NEWEST)
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+
+    val entries: StateFlow<List<JournalEntry>> = combine(
         journalRepository.getAllEntries(),
-        searchQuery
-    ) { entries, query ->
-        entries.filter { entry ->
-            query.isEmpty() || entry.title.contains(query, ignoreCase = true) ||
-                    entry.content.contains(query, ignoreCase = true)
-        }
-    }
+        _searchQuery,
+        _sortOption
+    ) { entries, query, sortOption ->
+        entries
+            .filter { entry ->
+                query.isEmpty() || entry.title.contains(query, ignoreCase = true) ||
+                        entry.content.contains(query, ignoreCase = true)
+            }
+            .let { filteredEntries ->
+                when (sortOption) {
+                    SortOption.NEWEST -> filteredEntries.sortedByDescending { it.creationTimestamp }
+                    SortOption.OLDEST -> filteredEntries.sortedBy { it.creationTimestamp }
+                    SortOption.HAPPY_FIRST -> filteredEntries.sortedWith(
+                        compareByDescending<JournalEntry> { it.mood == "Happy" }
+                            .thenByDescending { it.creationTimestamp }
+                    )
+                    SortOption.SAD_FIRST -> filteredEntries.sortedWith(
+                        compareByDescending<JournalEntry> { it.mood == "Sad" }
+                            .thenByDescending { it.creationTimestamp }
+                    )
+                }
+            }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Holds the entry that the user has long-pressed to delete
     private val _entryToDelete = MutableStateFlow<JournalEntry?>(null)
@@ -51,5 +73,9 @@ class JournalListViewModel @Inject constructor(
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
+    }
+
+    fun onSortOptionSelected(option: SortOption) {
+        _sortOption.value = option
     }
 }
