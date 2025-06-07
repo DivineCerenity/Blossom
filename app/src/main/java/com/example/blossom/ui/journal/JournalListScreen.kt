@@ -1,7 +1,7 @@
 package com.example.blossom.ui.journal
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,23 +14,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.blossom.data.JournalEntry
+import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.Date
-import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalListScreen(
-    viewModel: JournalListViewModel, // Takes ViewModel as a parameter
+    viewModel: JournalListViewModel,
     onNavigateToAddEntry: () -> Unit,
     onNavigateToEditEntry: (Int) -> Unit
 ) {
     val entries by viewModel.entries.collectAsState(initial = emptyList())
-    val entryToDelete by viewModel.entryToDelete.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-
-    val showDeleteDialog = entryToDelete != null
+    val searchQuery by viewModel.searchQuery.collectAsState(initial = "")
 
     Scaffold(
         topBar = {
@@ -46,58 +42,39 @@ fun JournalListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddEntry) {
-                Icon(Icons.Default.Add, contentDescription = "Add Journal Entry")
+            FloatingActionButton(
+                onClick = onNavigateToAddEntry,
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Entry")
             }
         }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            if (entries.isEmpty()) {
+    ) { padding ->
+        if (entries.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    if (searchQuery.isNotEmpty()) 
-                        "No entries match your search" 
-                    else 
-                        "No journal entries yet. Tap '+' to add one!"
+                    text = if (searchQuery.isNotEmpty()) "No entries match your search" else "No journal entries yet",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    items(items = entries, key = { it.id }) { entry ->
-                        JournalEntryCard(
-                            entry = entry,
-                            modifier = Modifier.combinedClickable(
-                                onClick = { onNavigateToEditEntry(entry.id) },
-                                onLongClick = { viewModel.onDeletionInitiated(entry) }
-                            )
-                        )
-                    }
-                }
             }
-
-            if (showDeleteDialog) {
-                AlertDialog(
-                    onDismissRequest = { viewModel.onDeletionCancelled() },
-                    title = { Text("Delete Entry?") },
-                    text = { Text("Are you sure you want to permanently delete this journal entry?") },
-                    confirmButton = {
-                        Button(
-                            onClick = { viewModel.onDeletionConfirmed() },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("Delete")
-                        }
-                    },
-                    dismissButton = {
-                        Button(onClick = { viewModel.onDeletionCancelled() }) {
-                            Text("Cancel")
-                        }
-                    }
-                )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                items(entries) { entry ->
+                    JournalEntryCard(
+                        entry = entry,
+                        onClick = { onNavigateToEditEntry(entry.id) }
+                    )
+                }
             }
         }
     }
@@ -106,24 +83,56 @@ fun JournalListScreen(
 @Composable
 fun JournalEntryCard(
     entry: JournalEntry,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MoodIconDisplay(mood = entry.mood, modifier = Modifier.size(40.dp))
+            // Mood icon with background
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = when (entry.mood) {
+                            "Happy" -> HappyColor.copy(alpha = 0.2f)
+                            "Neutral" -> NeutralColor.copy(alpha = 0.2f)
+                            "Sad" -> SadColor.copy(alpha = 0.2f)
+                            "Excited" -> ExcitedColor.copy(alpha = 0.2f)
+                            "Grateful" -> GratefulColor.copy(alpha = 0.2f)
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        shape = MaterialTheme.shapes.small
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                MoodIconDisplay(
+                    mood = entry.mood,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            
             Spacer(modifier = Modifier.width(16.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = entry.title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -149,17 +158,24 @@ fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {
         else -> Icons.Default.SentimentNeutral
     }
 
+    val tint = when (mood) {
+        "Happy" -> HappyColor
+        "Neutral" -> NeutralColor
+        "Sad" -> SadColor
+        "Excited" -> ExcitedColor
+        "Grateful" -> GratefulColor
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Icon(
         imageVector = icon,
         contentDescription = mood,
         modifier = modifier,
-        tint = MaterialTheme.colorScheme.secondary
+        tint = tint
     )
 }
 
 private fun formatTimestamp(timestamp: Long): String {
-    // Format: "Month day, year, hour:minute AM/PM"
-    // Example: "Jun 06, 2025, 10:45 AM"
     val sdf = SimpleDateFormat("MMM dd, yyyy, h:mm a", Locale.getDefault())
     val date = Date(timestamp)
     return sdf.format(date)
