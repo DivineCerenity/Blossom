@@ -1,11 +1,8 @@
 package com.example.blossom.ui.journal
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,13 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+// Unused imports can be removed, but these are correct
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 
 enum class SortOption(val label: String) {
     NEWEST("Newest First"),
@@ -109,25 +110,35 @@ fun JournalListScreen(
             }
         }
     ) { padding ->
-        if (entries.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (searchQuery.isNotEmpty()) "No entries match your search" else "No journal entries yet",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            if (isLoading) {
+        val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
+
+        // Show the confirmation dialog if an entry is marked for deletion
+        if (entryToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.onDeletionCancelled() },
+                title = { Text("Delete Entry") },
+                text = { Text("Are you sure you want to delete this entry?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = { viewModel.onDeletionConfirmed() }
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.onDeletionCancelled() }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        when {
+            isLoading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
@@ -135,119 +146,154 @@ fun JournalListScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-            } else {
+            }
+            entries.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (searchQuery.isNotEmpty()) "No entries match your search" else "No journal entries yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
                 ) {
                     items(
-                        entries,
+                        items = entries,
                         key = { it.id }
                     ) { entry ->
-                        val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
-
-                        if (entryToDelete != null) {
-                            AlertDialog(
-                                onDismissRequest = { viewModel.onDeletionCancelled() },
-                                title = { Text("Delete Entry") },
-                                text = { Text("Are you sure you want to delete this entry?") },
-                                confirmButton = {
-                                    TextButton(
-                                        onClick = {
-                                            viewModel.onDeletionConfirmed()
-                                        }
-                                    ) {
-                                        Text("Delete")
+                        // This state is correctly defined inside the 'items' scope,
+                        // ensuring each item has its own dismiss state.
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { swipeValue ->
+                                when (swipeValue) {
+                                    // Swipe right-to-left to delete
+                                    SwipeToDismissBoxValue.EndToStart -> {
+                                        viewModel.onDeletionInitiated(entry)
+                                        // Return false to prevent immediate dismissal.
+                                        // The item will be removed when the dialog is confirmed.
+                                        false
                                     }
-                                },
-                                dismissButton = {
-                                    TextButton(
-                                        onClick = { viewModel.onDeletionCancelled() }
-                                    ) {
-                                        Text("Cancel")
+                                    // Swipe left-to-right to edit
+                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                        onNavigateToEditEntry(entry.id)
+                                        // Return false to snap the item back after navigating.
+                                        false
                                     }
+                                    SwipeToDismissBoxValue.Settled -> false
                                 }
-                            )
-                        }
+                            }
+                        )
 
+                        // We use an AnimatedVisibility to remove the item from UI
+                        // smoothly when its deletion is initiated.
                         AnimatedVisibility(
-                            visible = entry.id != viewModel.entryToDelete.value?.id,
-                            enter = fadeIn() + expandIn(),
-                            exit = fadeOut() + shrinkOut()
+                            visible = entryToDelete?.id != entry.id,
+                            enter = fadeIn(),
+                            exit = shrinkOut() + fadeOut()
                         ) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(
-                                            onLongPress = { viewModel.onDeletionInitiated(entry) },
-                                            onTap = { onNavigateToEditEntry(entry.id) }
-                                        )
-                                    },
-                                shape = MaterialTheme.shapes.medium,
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {
+                                    val direction = dismissState.targetValue
+                                    val color by animateColorAsState(
+                                        targetValue = when (direction) {
+                                            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                            SwipeToDismissBoxValue.Settled -> Color.Transparent
+                                        },
+                                        label = "Swipe background color"
+                                    )
+                                    val icon = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
+                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                                        SwipeToDismissBoxValue.Settled -> null
+                                    }
+                                    val alignment = when(direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                                        SwipeToDismissBoxValue.Settled -> Alignment.Center // Won't be visible
+                                    }
+
                                     Box(
                                         modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(MaterialTheme.shapes.small)
-                                            .background(
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(
-                                                        when (entry.mood) {
-                                                            "Happy" -> HappyColor.copy(alpha = 0.2f)
-                                                            "Neutral" -> NeutralColor.copy(alpha = 0.2f)
-                                                            "Sad" -> SadColor.copy(alpha = 0.2f)
-                                                            "Excited" -> ExcitedColor.copy(alpha = 0.2f)
-                                                            "Grateful" -> GratefulColor.copy(alpha = 0.2f)
-                                                            else -> MaterialTheme.colorScheme.surfaceVariant
-                                                        },
-                                                        when (entry.mood) {
-                                                            "Happy" -> HappyColor.copy(alpha = 0.1f)
-                                                            "Neutral" -> NeutralColor.copy(alpha = 0.1f)
-                                                            "Sad" -> SadColor.copy(alpha = 0.1f)
-                                                            "Excited" -> ExcitedColor.copy(alpha = 0.1f)
-                                                            "Grateful" -> GratefulColor.copy(alpha = 0.1f)
-                                                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                                        }
-                                                    )
-                                                )
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxSize()
+                                            .background(color)
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = alignment
                                     ) {
-                                        MoodIconDisplay(
-                                            mood = entry.mood,
-                                            modifier = Modifier.size(32.dp)
-                                        )
+                                        icon?.let {
+                                            Icon(
+                                                imageVector = it,
+                                                contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd) "Edit" else "Delete",
+                                                tint = Color.White
+                                            )
+                                        }
                                     }
+                                }
+                            ) { // <-- CORRECT SYNTAX: Content is in the trailing lambda
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        // IMPROVEMENT: Add clickable modifier for easier editing
+                                        .clickable { onNavigateToEditEntry(entry.id) },
+                                    shape = MaterialTheme.shapes.medium,
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(MaterialTheme.shapes.small)
+                                                .background(
+                                                    brush = Brush.linearGradient(
+                                                        colors = listOf(
+                                                            getMoodColor(entry.mood).copy(alpha = 0.2f),
+                                                            getMoodColor(entry.mood).copy(alpha = 0.1f)
+                                                        )
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            MoodIconDisplay(
+                                                mood = entry.mood,
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                        }
 
-                                    Spacer(modifier = Modifier.width(16.dp))
+                                        Spacer(modifier = Modifier.width(16.dp))
 
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = entry.title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = formatTimestamp(entry.creationTimestamp),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = entry.title,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = formatTimestamp(entry.creationTimestamp),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -270,7 +316,17 @@ fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {
         else -> Icons.Default.SentimentNeutral
     }
 
-    val tint = when (mood) {
+    Icon(
+        imageVector = icon,
+        contentDescription = mood,
+        modifier = modifier,
+        tint = getMoodColor(mood = mood)
+    )
+}
+
+@Composable
+private fun getMoodColor(mood: String): Color {
+    return when (mood) {
         "Happy" -> HappyColor
         "Neutral" -> NeutralColor
         "Sad" -> SadColor
@@ -278,13 +334,6 @@ fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {
         "Grateful" -> GratefulColor
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-
-    Icon(
-        imageVector = icon,
-        contentDescription = mood,
-        modifier = modifier,
-        tint = tint
-    )
 }
 
 private fun formatTimestamp(timestamp: Long): String {
