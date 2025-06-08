@@ -33,7 +33,7 @@ object AppModule {
             BlossomDatabase::class.java,
             "blossom_database"
         )
-            .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3)
+            .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4)
             .build()
     }
 

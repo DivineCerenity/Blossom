@@ -242,9 +242,7 @@ fun JournalListScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        // IMPROVEMENT: Add clickable modifier for easier editing
-                                        .clickable { onNavigateToEditEntry(entry.id) },
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
                                     shape = MaterialTheme.shapes.medium,
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                     colors = CardDefaults.cardColors(

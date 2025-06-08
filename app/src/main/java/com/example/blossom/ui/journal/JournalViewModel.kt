@@ -19,7 +19,8 @@ data class AddEditJournalUiState(
     val isFavorited: Boolean = false,
     val creationTimestamp: Long = 0L,
     val isEditing: Boolean = false,
-    val shouldNavigateBack: Boolean = false
+    val shouldNavigateBack: Boolean = false,
+    val imageUri: String? = null
 )
 
 @HiltViewModel
@@ -34,6 +35,7 @@ class JournalViewModel @Inject constructor(
     fun onContentChanged(newContent: String) { _uiState.update { it.copy(content = newContent) } }
     fun onMoodSelected(newMood: String) { _uiState.update { it.copy(selectedMood = newMood) } }
     fun onFavoriteToggled() { _uiState.update { it.copy(isFavorited = !it.isFavorited) } }
+    fun onImageUriChanged(newUri: String?) { _uiState.update { it.copy(imageUri = newUri) } }
 
     fun loadEntry(entryId: Int) {
         if (entryId == -1) {
@@ -51,7 +53,8 @@ class JournalViewModel @Inject constructor(
                         selectedMood = entry.mood,
                         isFavorited = entry.is_favorited,
                         creationTimestamp = entry.creationTimestamp,
-                        isEditing = true
+                        isEditing = true,
+                        imageUri = entry.imageUri
                     )
                 }
             }
@@ -69,7 +72,8 @@ class JournalViewModel @Inject constructor(
             creationTimestamp = if (currentState.isEditing) currentState.creationTimestamp else System.currentTimeMillis(),
             lastModifiedTimestamp = System.currentTimeMillis(),
             mood = currentState.selectedMood,
-            is_favorited = currentState.isFavorited
+            is_favorited = currentState.isFavorited,
+            imageUri = currentState.imageUri
         )
 
         viewModelScope.launch {
@@ -79,4 +83,24 @@ class JournalViewModel @Inject constructor(
     }
 
     fun eventHandled() { _uiState.update { it.copy(shouldNavigateBack = false) } }
+
+    fun deleteImage() {
+        _uiState.update { it.copy(imageUri = null) }
+        val currentState = _uiState.value
+        if (currentState.currentEntryId != null && currentState.isEditing) {
+            val updatedEntry = JournalEntry(
+                id = currentState.currentEntryId,
+                title = currentState.title,
+                content = currentState.content,
+                creationTimestamp = currentState.creationTimestamp,
+                lastModifiedTimestamp = System.currentTimeMillis(),
+                mood = currentState.selectedMood,
+                is_favorited = currentState.isFavorited,
+                imageUri = null
+            )
+            viewModelScope.launch {
+                journalRepository.insert(updatedEntry)
+            }
+        }
+    }
 }

@@ -13,5 +13,6 @@ data class JournalEntry(
     val creationTimestamp: Long, // <--- ADDED
     val lastModifiedTimestamp: Long, // <--- RENAMED from timestamp
     val mood: String,
-    val is_favorited: Boolean = false
+    val is_favorited: Boolean = false,
+    val imageUri: String? = null
 )
