@@ -1,22 +1,25 @@
 package com.example.blossom.data
 
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
 /**
  * The repository is the single source of truth for our app's data.
  * The ViewModels will talk to this file, not directly to the DAO.
  */
-class JournalRepository(private val journalDao: JournalDao) {
+class JournalRepository @Inject constructor(private val journalDao: JournalDao) {
 
-    fun getAllEntries(): Flow<List<JournalEntry>> = journalDao.getAllEntries()
+    fun getJournalEntries(): Flow<List<JournalEntry>> = journalDao.getAllEntries()
 
-    suspend fun getEntryById(id: Int): JournalEntry? = journalDao.getEntryById(id)
-
-    suspend fun insert(entry: JournalEntry) {
-        journalDao.insert(entry)
+    suspend fun getJournalEntryById(id: Int): JournalEntry? {
+        return journalDao.getEntryById(id)
     }
 
-    suspend fun delete(entry: JournalEntry) {
-        journalDao.delete(entry)
+    suspend fun insertJournalEntry(journalEntry: JournalEntry) {
+        journalDao.insertJournalEntry(journalEntry)
+    }
+
+    suspend fun delete(journalEntry: JournalEntry) {
+        journalDao.delete(journalEntry)
     }
 }

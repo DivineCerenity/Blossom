@@ -1,8 +1,9 @@
 package com.example.blossom.ui.journal
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,8 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
@@ -25,6 +29,8 @@ import java.util.*
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.graphicsLayer
 
 enum class SortOption(val label: String) {
     NEWEST("Newest First"),
@@ -45,6 +51,9 @@ fun JournalListScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     var selectedSortOption by remember { mutableStateOf(SortOption.NEWEST) }
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
+
+    // State for fullscreen image dialog
+    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -133,6 +142,11 @@ fun JournalListScreen(
                     }
                 }
             )
+        }
+
+        // Show fullscreen image dialog if needed
+        fullscreenImageUrl?.let { imageUrl ->
+            ZoomableImageDialog(imageUrl = imageUrl, onDismiss = { fullscreenImageUrl = null })
         }
 
         when {
@@ -292,6 +306,21 @@ fun JournalListScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
+
+                                        // Example: Show gallery image if present
+                                        // Replace 'entry.imageUrl' with your actual image property
+                                        if (entry.imageUrl != null) {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(model = entry.imageUrl),
+                                                contentDescription = "Journal Image",
+                                                modifier = Modifier
+                                                    .size(80.dp)
+                                                    .clip(MaterialTheme.shapes.medium)
+                                                    .clickable { fullscreenImageUrl = entry.imageUrl },
+                                                contentScale = ContentScale.Crop
+                                            )
+                                            Spacer(modifier = Modifier.width(16.dp))
+                                        }
                                     }
                                 }
                             }
@@ -299,6 +328,44 @@ fun JournalListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+// Zoomable fullscreen image dialog
+@Composable
+fun ZoomableImageDialog(imageUrl: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        var scale by remember { mutableStateOf(1f) }
+        var offsetX by remember { mutableStateOf(0f) }
+        var offsetY by remember { mutableStateOf(0f) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 5f)
+                        offsetX += pan.x
+                        offsetY += pan.y
+                    }
+                }
+                .clickable { onDismiss() }
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(imageUrl),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offsetX,
+                        translationY = offsetY
+                    ),
+                contentScale = ContentScale.Fit
+            )
         }
     }
 }

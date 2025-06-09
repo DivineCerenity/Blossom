@@ -24,7 +24,7 @@ class JournalListViewModel @Inject constructor(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     val entries: StateFlow<List<JournalEntry>> = combine(
-        journalRepository.getAllEntries(),
+        journalRepository.getJournalEntries(),
         _searchQuery,
         _sortOption
     ) { entries, query, sortOption ->
@@ -57,7 +57,7 @@ class JournalListViewModel @Inject constructor(
     init {
         _isLoading.value = true
         viewModelScope.launch {
-            journalRepository.getAllEntries().collect()
+            journalRepository.getJournalEntries().collect()
             _isLoading.value = false
         }
     }

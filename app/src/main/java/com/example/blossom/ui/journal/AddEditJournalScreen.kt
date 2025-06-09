@@ -10,7 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions // <--- THIS IS THE FIX
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -37,20 +38,26 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
-import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditJournalScreen(
-    viewModel: JournalViewModel,
-    onNavigateBack: () -> Unit
+    uiState: AddEditJournalUiState,
+    onTitleChanged: (String) -> Unit,
+    onContentChanged: (String) -> Unit,
+    onMoodSelected: (String) -> Unit,
+    onImageUriChanged: (String?) -> Unit,
+    saveJournalEntry: () -> Unit,
+    deleteImage: () -> Unit,
+    eventHandled: () -> Unit,
+    onNavigateBack: () -> Unit, // <-- Add this parameter
+    isEditing: Boolean = false // <-- Add a default value if not provided by the caller
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val cameraImageUriState = remember { mutableStateOf<Uri?>(null) }
+
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
-            // Copy the image to app storage for persistence
             val inputStream: InputStream? = context.contentResolver.openInputStream(it)
             val destFile = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
@@ -66,14 +73,16 @@ fun AddEditJournalScreen(
                 context.packageName + ".provider",
                 destFile
             )
-            viewModel.onImageUriChanged(destUri.toString())
+            onImageUriChanged(destUri.toString())
         }
     }
+
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success && cameraImageUriState.value != null) {
-            viewModel.onImageUriChanged(cameraImageUriState.value.toString())
+            onImageUriChanged(cameraImageUriState.value.toString())
         }
     }
+
     fun launchCamera() {
         val photoFile = File(
             context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
@@ -91,14 +100,14 @@ fun AddEditJournalScreen(
     LaunchedEffect(uiState.shouldNavigateBack) {
         if (uiState.shouldNavigateBack) {
             onNavigateBack()
-            viewModel.eventHandled()
+            eventHandled()
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (uiState.isEditing) "Edit Entry" else "New Entry") },
+                title = { Text(if (isEditing) "Edit Entry" else "New Entry") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -107,7 +116,7 @@ fun AddEditJournalScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.saveJournalEntry() }) {
+            FloatingActionButton(onClick = { saveJournalEntry() }) {
                 Icon(Icons.Default.Done, contentDescription = "Save Entry")
             }
         }
@@ -121,7 +130,7 @@ fun AddEditJournalScreen(
         ) {
             OutlinedTextField(
                 value = uiState.title,
-                onValueChange = { viewModel.onTitleChanged(it) },
+                onValueChange = { onTitleChanged(it) },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -132,7 +141,7 @@ fun AddEditJournalScreen(
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = uiState.content,
-                onValueChange = { viewModel.onContentChanged(it) },
+                onValueChange = { onContentChanged(it) },
                 label = { Text("What's on your mind?") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -146,8 +155,8 @@ fun AddEditJournalScreen(
             Text("How are you feeling?", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             MoodSelector(
-                selectedMood = uiState.selectedMood,
-                onMoodSelected = { viewModel.onMoodSelected(it) }
+                selectedMood = uiState.mood,
+                onMoodSelected = { onMoodSelected(it) }
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text("Add a photo", style = MaterialTheme.typography.titleMedium)
@@ -166,11 +175,11 @@ fun AddEditJournalScreen(
                     Text("Camera")
                 }
             }
-            val displayImageUri = uiState.imageUri?.let { Uri.parse(it) }
-            displayImageUri?.let { uri ->
+
+            uiState.imageUrl?.let { imageUrl ->
                 Spacer(Modifier.height(12.dp))
                 AsyncImage(
-                    model = uri,
+                    model = imageUrl,
                     contentDescription = "Selected image",
                     modifier = Modifier
                         .fillMaxWidth()
@@ -178,7 +187,7 @@ fun AddEditJournalScreen(
                         .clip(MaterialTheme.shapes.medium)
                 )
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { viewModel.deleteImage() }) {
+                Button(onClick = { deleteImage() }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete image")
                     Spacer(Modifier.width(4.dp))
                     Text("Delete Image")

@@ -2,104 +2,103 @@ package com.example.blossom.ui.journal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.blossom.data.JournalDao
 import com.example.blossom.data.JournalEntry
-import com.example.blossom.data.JournalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class AddEditJournalUiState(
-    val currentEntryId: Int? = null,
-    val title: String = "",
-    val content: String = "",
-    val selectedMood: String = "Happy",
-    val isFavorited: Boolean = false,
-    val creationTimestamp: Long = 0L,
-    val isEditing: Boolean = false,
-    val shouldNavigateBack: Boolean = false,
-    val imageUri: String? = null
-)
-
 @HiltViewModel
 class JournalViewModel @Inject constructor(
-    private val journalRepository: JournalRepository
+    private val journalDao: JournalDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditJournalUiState())
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<AddEditJournalUiState> = _uiState.asStateFlow()
 
-    fun onTitleChanged(newTitle: String) { _uiState.update { it.copy(title = newTitle) } }
-    fun onContentChanged(newContent: String) { _uiState.update { it.copy(content = newContent) } }
-    fun onMoodSelected(newMood: String) { _uiState.update { it.copy(selectedMood = newMood) } }
-    fun onFavoriteToggled() { _uiState.update { it.copy(isFavorited = !it.isFavorited) } }
-    fun onImageUriChanged(newUri: String?) { _uiState.update { it.copy(imageUri = newUri) } }
-
-    fun loadEntry(entryId: Int) {
-        if (entryId == -1) {
-            _uiState.value = AddEditJournalUiState()
-            return
-        }
+    fun insertJournalEntry(title: String, content: String, mood: String, imageUrl: String?) {
         viewModelScope.launch {
-            val entry = journalRepository.getEntryById(entryId)
-            if (entry != null) {
-                _uiState.update {
-                    it.copy(
-                        currentEntryId = entry.id,
-                        title = entry.title,
-                        content = entry.content,
-                        selectedMood = entry.mood,
-                        isFavorited = entry.is_favorited,
-                        creationTimestamp = entry.creationTimestamp,
-                        isEditing = true,
-                        imageUri = entry.imageUri
-                    )
-                }
-            }
+            val journalEntry = JournalEntry(
+                title = title,
+                content = content,
+                mood = mood,
+                creationTimestamp = System.currentTimeMillis(),
+                imageUrl = imageUrl
+            )
+            journalDao.insertJournalEntry(journalEntry)
         }
+    }
+
+    fun updateJournalEntry(id: Int, title: String, content: String, mood: String, imageUrl: String?) {
+        viewModelScope.launch {
+            val updatedJournalEntry = JournalEntry(
+                id = id,
+                title = title,
+                content = content,
+                mood = mood,
+                creationTimestamp = System.currentTimeMillis(),
+                imageUrl = imageUrl
+            )
+            journalDao.insertJournalEntry(updatedJournalEntry) // Assuming insert is also used for updates
+        }
+    }
+
+    fun getAllJournalEntries() = journalDao.getAllEntries()
+
+    fun onTitleChanged(title: String) {
+        _uiState.value = _uiState.value.copy(title = title)
+    }
+
+    fun onContentChanged(content: String) {
+        _uiState.value = _uiState.value.copy(content = content)
+    }
+
+    fun onMoodSelected(mood: String) {
+        _uiState.value = _uiState.value.copy(mood = mood)
+    }
+
+    fun onImageUriChanged(imageUri: String?) {
+        _uiState.value = _uiState.value.copy(imageUrl = imageUri)
     }
 
     fun saveJournalEntry() {
-        val currentState = _uiState.value
-        if (currentState.title.isBlank()) return
-
-        val entryToSave = JournalEntry(
-            id = currentState.currentEntryId ?: 0,
-            title = currentState.title,
-            content = currentState.content,
-            creationTimestamp = if (currentState.isEditing) currentState.creationTimestamp else System.currentTimeMillis(),
-            lastModifiedTimestamp = System.currentTimeMillis(),
-            mood = currentState.selectedMood,
-            is_favorited = currentState.isFavorited,
-            imageUri = currentState.imageUri
-        )
-
         viewModelScope.launch {
-            journalRepository.insert(entryToSave)
-            _uiState.update { it.copy(shouldNavigateBack = true) }
+            val currentState = _uiState.value
+            val journalEntry = JournalEntry(
+                id = currentState.id,
+                title = currentState.title,
+                content = currentState.content,
+                mood = currentState.mood,
+                creationTimestamp = System.currentTimeMillis(),
+                imageUrl = currentState.imageUrl
+            )
+            journalDao.insertJournalEntry(journalEntry)
+            _uiState.value = _uiState.value.copy(shouldNavigateBack = true)
         }
     }
 
-    fun eventHandled() { _uiState.update { it.copy(shouldNavigateBack = false) } }
-
     fun deleteImage() {
-        _uiState.update { it.copy(imageUri = null) }
-        val currentState = _uiState.value
-        if (currentState.currentEntryId != null && currentState.isEditing) {
-            val updatedEntry = JournalEntry(
-                id = currentState.currentEntryId,
-                title = currentState.title,
-                content = currentState.content,
-                creationTimestamp = currentState.creationTimestamp,
-                lastModifiedTimestamp = System.currentTimeMillis(),
-                mood = currentState.selectedMood,
-                is_favorited = currentState.isFavorited,
-                imageUri = null
-            )
-            viewModelScope.launch {
-                journalRepository.insert(updatedEntry)
+        _uiState.value = _uiState.value.copy(imageUrl = null)
+    }
+
+    fun eventHandled() {
+        _uiState.value = _uiState.value.copy(shouldNavigateBack = false)
+    }
+
+    fun loadEntry(id: Int) {
+        viewModelScope.launch {
+            val entry = journalDao.getEntryById(id)
+            entry?.let {
+                _uiState.value = AddEditJournalUiState(
+                    id = it.id,
+                    title = it.title,
+                    content = it.content,
+                    mood = it.mood,
+                    imageUrl = it.imageUrl
+                )
             }
         }
     }

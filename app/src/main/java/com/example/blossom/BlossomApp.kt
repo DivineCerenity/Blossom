@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -111,8 +112,16 @@ fun BlossomApp() {
                 }
 
                 AddEditJournalScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    uiState = viewModel.uiState.collectAsState().value,
+                    onTitleChanged = viewModel::onTitleChanged,
+                    onContentChanged = viewModel::onContentChanged,
+                    onMoodSelected = viewModel::onMoodSelected,
+                    onImageUriChanged = viewModel::onImageUriChanged,
+                    saveJournalEntry = viewModel::saveJournalEntry,
+                    deleteImage = viewModel::deleteImage,
+                    eventHandled = viewModel::eventHandled,
+                    onNavigateBack = { navController.popBackStack() },
+                    isEditing = entryId != -1
                 )
             }
         }
