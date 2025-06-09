@@ -11,5 +11,7 @@ data class JournalEntry(
     val content: String,
     val mood: String,
     val creationTimestamp: Long,
-    val imageUrl: String? = null
+    val imageUrl: String? = null, // Keep for backward compatibility
+    val imageUrls: String = "", // Pipe-separated image URLs
+    val featuredImageUrl: String? = null // URL of the featured image for the card
 )

@@ -5,6 +5,8 @@ data class AddEditJournalUiState(
     val title: String = "",
     val content: String = "",
     val mood: String = "",
-    val imageUrl: String? = null,
+    val imageUrl: String? = null, // Keep for backward compatibility
+    val imageUrls: List<String> = emptyList(), // Multiple images
+    val featuredImageUrl: String? = null, // Featured image for the card
     val shouldNavigateBack: Boolean = false
 )

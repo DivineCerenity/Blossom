@@ -1,23 +1,24 @@
+package com.example.blossom
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Book
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.blossom.ui.dashboard.DashboardViewModel
 
 // This is the main screen Composable
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -26,29 +27,43 @@ fun DashboardScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // 1. Title
-            Text(
-                text = "My Day",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 2. Daily Verse Card
-            DailyVerseCard()
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 3. Navigation Buttons
-            NavigationButtons()
+            // Daily Verse Card
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                uiState.error != null -> {
+                    DailyVerseCard(
+                        verseText = "\"For I know the plans I have for you,\" declares the Lord, \"plans to prosper you and not to harm you, plans to give you hope and a future.\"",
+                        verseReference = "Jeremiah 29:11"
+                    )
+                }
+                else -> {
+                    DailyVerseCard(
+                        verseText = uiState.verseText,
+                        verseReference = uiState.verseReference
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun DailyVerseCard() {
+fun DailyVerseCard(
+    verseText: String = "\"For I know the plans I have for you,\" declares the Lord, \"plans to prosper you and not to harm you, plans to give you hope and a future.\"",
+    verseReference: String = "Jeremiah 29:11"
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -63,13 +78,13 @@ fun DailyVerseCard() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "\"For I know the plans I have for you,\" declares the Lord, \"plans to prosper you and not to harm you, plans to give you hope and a future.\"",
+                text = verseText,
                 style = MaterialTheme.typography.bodyLarge,
                 lineHeight = 24.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Jeremiah 29:11",
+                text = verseReference,
                 modifier = Modifier.align(Alignment.End),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
@@ -78,39 +93,11 @@ fun DailyVerseCard() {
     }
 }
 
-@Composable
-fun NavigationButtons() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        NavButton(icon = Icons.Rounded.Edit, label = "Journal")
-        NavButton(icon = Icons.Rounded.Book, label = "Prayers")
-        NavButton(icon = Icons.Rounded.CheckCircle, label = "Checklist")
-        NavButton(icon = Icons.Rounded.SelfImprovement, label = "Meditate")
-    }
-}
-
-@Composable
-fun NavButton(icon: ImageVector, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(32.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
-    }
-}
 
 
-// This is the Preview Composable that Android Studio will render
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun DashboardScreenPreview() {
-    // You can wrap your preview in a theme if you have one set up
-    // For now, we'll just call the screen directly.
-    DashboardScreen()
+    DailyVerseCard()
 }

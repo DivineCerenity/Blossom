@@ -188,15 +188,15 @@ fun JournalListScreen(
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { swipeValue ->
                                 when (swipeValue) {
-                                    // Swipe right-to-left to delete
-                                    SwipeToDismissBoxValue.EndToStart -> {
+                                    // Swipe left-to-right to delete
+                                    SwipeToDismissBoxValue.StartToEnd -> {
                                         viewModel.onDeletionInitiated(entry)
                                         // Return false to prevent immediate dismissal.
                                         // The item will be removed when the dialog is confirmed.
                                         false
                                     }
-                                    // Swipe left-to-right to edit
-                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                    // Swipe right-to-left to edit
+                                    SwipeToDismissBoxValue.EndToStart -> {
                                         onNavigateToEditEntry(entry.id)
                                         // Return false to snap the item back after navigating.
                                         false
@@ -219,15 +219,15 @@ fun JournalListScreen(
                                     val direction = dismissState.targetValue
                                     val color by animateColorAsState(
                                         targetValue = when (direction) {
-                                            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                             SwipeToDismissBoxValue.Settled -> Color.Transparent
                                         },
                                         label = "Swipe background color"
                                     )
                                     val icon = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
-                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
+                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
                                         SwipeToDismissBoxValue.Settled -> null
                                     }
                                     val alignment = when(direction) {
@@ -307,16 +307,19 @@ fun JournalListScreen(
                                             )
                                         }
 
-                                        // Example: Show gallery image if present
-                                        // Replace 'entry.imageUrl' with your actual image property
-                                        if (entry.imageUrl != null) {
+                                        // Show featured image or fallback to first image
+                                        val displayImageUrl = entry.featuredImageUrl
+                                            ?: entry.imageUrl
+                                            ?: entry.imageUrls.takeIf { it.isNotEmpty() }?.split("|")?.firstOrNull()
+
+                                        if (displayImageUrl != null) {
                                             Image(
-                                                painter = rememberAsyncImagePainter(model = entry.imageUrl),
+                                                painter = rememberAsyncImagePainter(model = displayImageUrl),
                                                 contentDescription = "Journal Image",
                                                 modifier = Modifier
                                                     .size(80.dp)
                                                     .clip(MaterialTheme.shapes.medium)
-                                                    .clickable { fullscreenImageUrl = entry.imageUrl },
+                                                    .clickable { fullscreenImageUrl = displayImageUrl },
                                                 contentScale = ContentScale.Crop
                                             )
                                             Spacer(modifier = Modifier.width(16.dp))
@@ -392,11 +395,11 @@ fun MoodIconDisplay(mood: String, modifier: Modifier = Modifier) {
 @Composable
 private fun getMoodColor(mood: String): Color {
     return when (mood) {
-        "Happy" -> HappyColor
-        "Neutral" -> NeutralColor
-        "Sad" -> SadColor
-        "Excited" -> ExcitedColor
-        "Grateful" -> GratefulColor
+        "Happy" -> Color(0xFFFFD700)  // Gold
+        "Neutral" -> Color(0xFF90A4AE)  // Blue gray
+        "Sad" -> Color(0xFF2196F3)  // Material Blue
+        "Excited" -> Color(0xFF66BB6A)  // Green
+        "Grateful" -> Color(0xFFE91E63)  // Pink/Red
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }

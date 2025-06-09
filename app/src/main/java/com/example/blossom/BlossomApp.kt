@@ -21,6 +21,9 @@ import com.example.blossom.ui.journal.AddEditJournalScreen
 import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
 import com.example.blossom.ui.journal.JournalViewModel
+import com.example.blossom.ui.checklist.ChecklistScreen
+import com.example.blossom.ui.meditation.MeditationScreen
+import com.example.blossom.ui.prayer.PrayerRequestsScreen
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,9 +77,18 @@ fun BlossomApp() {
         }
     ) { innerPadding ->
         NavHost(navController, startDestination = Screen.Home.route, Modifier.padding(innerPadding)) {
-            composable(Screen.Home.route) { DashboardScreen() }
-            composable(Screen.Meditate.route) { Text("Meditate Screen") }
-            composable(Screen.Checklist.route) { Text("Checklist Screen") }
+            composable(Screen.Home.route) {
+                DashboardScreen()
+            }
+            composable(Screen.Meditate.route) {
+                MeditationScreen()
+            }
+            composable(Screen.Checklist.route) {
+                ChecklistScreen()
+            }
+            composable(Screen.Prayers.route) {
+                PrayerRequestsScreen()
+            }
 
             composable(Screen.JournalList.route) {
                 val viewModel: JournalListViewModel = hiltViewModel()
@@ -117,8 +129,10 @@ fun BlossomApp() {
                     onContentChanged = viewModel::onContentChanged,
                     onMoodSelected = viewModel::onMoodSelected,
                     onImageUriChanged = viewModel::onImageUriChanged,
+                    onAddImage = viewModel::onAddImage,
+                    onDeleteImage = viewModel::onDeleteImage,
+                    onSetFeaturedImage = viewModel::onSetFeaturedImage,
                     saveJournalEntry = viewModel::saveJournalEntry,
-                    deleteImage = viewModel::deleteImage,
                     eventHandled = viewModel::eventHandled,
                     onNavigateBack = { navController.popBackStack() },
                     isEditing = entryId != -1

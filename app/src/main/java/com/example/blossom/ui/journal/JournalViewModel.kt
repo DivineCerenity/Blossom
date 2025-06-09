@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
 import javax.inject.Inject
 
 @HiltViewModel
@@ -64,17 +65,57 @@ class JournalViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(imageUrl = imageUri)
     }
 
+    fun onAddImage(imageUri: String) {
+        val currentImages = _uiState.value.imageUrls.toMutableList()
+        currentImages.add(imageUri)
+
+        // If this is the first image, set it as featured
+        val featuredImage = _uiState.value.featuredImageUrl ?: imageUri
+
+        _uiState.value = _uiState.value.copy(
+            imageUrl = if (_uiState.value.imageUrl == null) imageUri else _uiState.value.imageUrl, // Keep for backward compatibility
+            imageUrls = currentImages,
+            featuredImageUrl = featuredImage
+        )
+    }
+
+    fun onDeleteImage(imageUri: String) {
+        val currentImages = _uiState.value.imageUrls.toMutableList()
+        currentImages.remove(imageUri)
+
+        // If the deleted image was the featured image, clear it or set a new one
+        val newFeaturedImage = if (_uiState.value.featuredImageUrl == imageUri) {
+            currentImages.firstOrNull() // Set first remaining image as featured, or null if none
+        } else {
+            _uiState.value.featuredImageUrl
+        }
+
+        _uiState.value = _uiState.value.copy(
+            imageUrls = currentImages,
+            featuredImageUrl = newFeaturedImage
+        )
+    }
+
+    fun onSetFeaturedImage(imageUri: String) {
+        _uiState.value = _uiState.value.copy(featuredImageUrl = imageUri)
+    }
+
     fun saveJournalEntry() {
         viewModelScope.launch {
             val currentState = _uiState.value
+            val imageUrlsString = currentState.imageUrls.joinToString("|")
+
             val journalEntry = JournalEntry(
                 id = currentState.id,
                 title = currentState.title,
                 content = currentState.content,
                 mood = currentState.mood,
                 creationTimestamp = System.currentTimeMillis(),
-                imageUrl = currentState.imageUrl
+                imageUrl = currentState.imageUrl, // Keep for backward compatibility
+                imageUrls = imageUrlsString,
+                featuredImageUrl = currentState.featuredImageUrl
             )
+
             journalDao.insertJournalEntry(journalEntry)
             _uiState.value = _uiState.value.copy(shouldNavigateBack = true)
         }
@@ -92,12 +133,21 @@ class JournalViewModel @Inject constructor(
         viewModelScope.launch {
             val entry = journalDao.getEntryById(id)
             entry?.let {
+                val imageUrls = if (it.imageUrls.isNotEmpty()) {
+                    it.imageUrls.split("|").filter { url -> url.isNotBlank() }
+                } else {
+                    // Fallback to single image for backward compatibility
+                    if (it.imageUrl != null) listOf(it.imageUrl) else emptyList()
+                }
+
                 _uiState.value = AddEditJournalUiState(
                     id = it.id,
                     title = it.title,
                     content = it.content,
                     mood = it.mood,
-                    imageUrl = it.imageUrl
+                    imageUrl = it.imageUrl,
+                    imageUrls = imageUrls,
+                    featuredImageUrl = it.featuredImageUrl
                 )
             }
         }

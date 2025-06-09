@@ -8,6 +8,8 @@ import android.net.Uri
 import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,14 +23,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -39,7 +47,7 @@ import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddEditJournalScreen(
     uiState: AddEditJournalUiState,
@@ -47,14 +55,20 @@ fun AddEditJournalScreen(
     onContentChanged: (String) -> Unit,
     onMoodSelected: (String) -> Unit,
     onImageUriChanged: (String?) -> Unit,
+    onAddImage: (String) -> Unit,
+    onDeleteImage: (String) -> Unit,
+    onSetFeaturedImage: (String) -> Unit,
     saveJournalEntry: () -> Unit,
-    deleteImage: () -> Unit,
     eventHandled: () -> Unit,
     onNavigateBack: () -> Unit, // <-- Add this parameter
     isEditing: Boolean = false // <-- Add a default value if not provided by the caller
 ) {
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
     val cameraImageUriState = remember { mutableStateOf<Uri?>(null) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var showFullScreenViewer by remember { mutableStateOf(false) }
+    var fullScreenImageIndex by remember { mutableIntStateOf(0) }
 
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
@@ -73,28 +87,38 @@ fun AddEditJournalScreen(
                 context.packageName + ".provider",
                 destFile
             )
-            onImageUriChanged(destUri.toString())
+            onAddImage(destUri.toString())
         }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success && cameraImageUriState.value != null) {
-            onImageUriChanged(cameraImageUriState.value.toString())
+            // For now, just add the image - most modern camera apps handle orientation correctly
+            onAddImage(cameraImageUriState.value.toString())
         }
     }
 
     fun launchCamera() {
-        val photoFile = File(
-            context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-            "journal_${System.currentTimeMillis()}.jpg"
-        )
-        val uri = FileProvider.getUriForFile(
-            context,
-            context.packageName + ".provider",
-            photoFile
-        )
-        cameraImageUriState.value = uri
-        cameraLauncher.launch(uri)
+        try {
+            val photoFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                "journal_${System.currentTimeMillis()}.jpg"
+            )
+
+            // Ensure the directory exists
+            photoFile.parentFile?.mkdirs()
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                context.packageName + ".provider",
+                photoFile
+            )
+            cameraImageUriState.value = uri
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            // Handle camera launch errors gracefully
+            e.printStackTrace()
+        }
     }
 
     LaunchedEffect(uiState.shouldNavigateBack) {
@@ -159,41 +183,138 @@ fun AddEditJournalScreen(
                 onMoodSelected = { onMoodSelected(it) }
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Add a photo", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = { galleryLauncher.launch("image/*") }) {
-                    Icon(Icons.Default.Image, contentDescription = "Pick from gallery")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Gallery")
-                }
-                Button(onClick = { launchCamera() }) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Take photo")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Camera")
-                }
-            }
 
-            uiState.imageUrl?.let { imageUrl ->
-                Spacer(Modifier.height(12.dp))
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Selected image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                )
-                Spacer(Modifier.height(8.dp))
-                Button(onClick = { deleteImage() }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete image")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Delete Image")
+            // Elegant Image Manager
+            ElegantImageManager(
+                imageUrls = uiState.imageUrls,
+                featuredImageUrl = uiState.featuredImageUrl,
+                onAddImage = { showImageSourceDialog = true },
+                onDeleteImage = onDeleteImage,
+                onSetFeaturedImage = onSetFeaturedImage,
+                onImageClick = { imageUrls, index ->
+                    fullScreenImageIndex = index
+                    showFullScreenViewer = true
                 }
-            }
+            )
         }
+    }
+
+    // Image Source Selection Dialog
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = {
+                Text(
+                    "Add Photo",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "Choose how you'd like to add a photo:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Gallery Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable {
+                                galleryLauncher.launch("image/*")
+                                showImageSourceDialog = false
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.PhotoLibrary,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Gallery",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Choose from your photos",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Camera Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable {
+                                launchCamera()
+                                showImageSourceDialog = false
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Camera",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Take a new photo",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = { showImageSourceDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    // Full Screen Image Viewer
+    if (showFullScreenViewer && uiState.imageUrls.isNotEmpty()) {
+        FullScreenImageViewer(
+            imageUrls = uiState.imageUrls,
+            initialImageIndex = fullScreenImageIndex,
+            onDismiss = { showFullScreenViewer = false }
+        )
     }
 }
 
