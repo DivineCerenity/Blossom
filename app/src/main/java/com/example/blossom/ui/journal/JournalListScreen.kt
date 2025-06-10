@@ -16,8 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.res.painterResource
+import kotlin.math.*
 
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -26,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
+import com.example.blossom.R
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
@@ -350,21 +358,17 @@ fun JournalListScreen(
                                             )
                                         }
 
-                                        // Always show image space to maintain consistent height
+                                        // Only show image when one exists, but maintain consistent spacing
                                         val displayImageUrl = entry.featuredImageUrl
                                             ?: entry.imageUrl
                                             ?: entry.imageUrls.takeIf { it.isNotEmpty() }?.split("|")?.firstOrNull()
 
-                                        Box(
-                                            modifier = Modifier
-                                                .size(80.dp)
-                                                .clip(MaterialTheme.shapes.medium)
-                                                .background(
-                                                    if (displayImageUrl != null) Color.Transparent
-                                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                                )
-                                        ) {
-                                            if (displayImageUrl != null) {
+                                        if (displayImageUrl != null) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(80.dp)
+                                                    .clip(MaterialTheme.shapes.medium)
+                                            ) {
                                                 Image(
                                                     painter = rememberAsyncImagePainter(model = displayImageUrl),
                                                     contentDescription = "Journal Image",
@@ -382,17 +386,10 @@ fun JournalListScreen(
                                                         },
                                                     contentScale = ContentScale.Crop
                                                 )
-                                            } else {
-                                                // Placeholder for entries without images
-                                                Icon(
-                                                    Icons.Default.Image,
-                                                    contentDescription = "No image",
-                                                    modifier = Modifier
-                                                        .align(Alignment.Center)
-                                                        .size(32.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                                )
                                             }
+                                        } else {
+                                            // Invisible spacer to maintain consistent card width
+                                            Spacer(modifier = Modifier.size(80.dp))
                                         }
                                         Spacer(modifier = Modifier.width(16.dp))
                                     }
@@ -480,6 +477,51 @@ private fun getMoodColor(mood: String): Color {
 
 private fun formatTimestamp(timestamp: Long): String {
     return SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date(timestamp))
+}
+
+@Composable
+fun BlossomFlowerIcon(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary
+) {
+    Canvas(modifier = modifier) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val radius = size.minDimension / 2.2f // Bigger radius to fill more space
+
+        // Draw flower petals (6 petals for more elegance)
+        for (i in 0..5) {
+            val angle = (i * 60f) * (PI / 180f).toFloat()
+            val petalDistance = radius * 0.5f
+            val petalCenter = Offset(
+                center.x + cos(angle) * petalDistance,
+                center.y + sin(angle) * petalDistance
+            )
+
+            // Draw larger, more elegant petal as an oval
+            drawOval(
+                color = color,
+                topLeft = Offset(
+                    petalCenter.x - radius * 0.35f,
+                    petalCenter.y - radius * 0.6f
+                ),
+                size = Size(radius * 0.7f, radius * 1.2f)
+            )
+        }
+
+        // Draw elegant center with gradient effect
+        drawCircle(
+            color = color.copy(alpha = 0.9f),
+            radius = radius * 0.25f,
+            center = center
+        )
+
+        // Add inner center highlight for depth
+        drawCircle(
+            color = color.copy(alpha = 0.6f),
+            radius = radius * 0.15f,
+            center = center
+        )
+    }
 }
 
 @Composable
