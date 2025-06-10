@@ -23,15 +23,15 @@ import androidx.compose.ui.graphics.Color
 private val DarkColorScheme = darkColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = AccentBlueGray,
+    primaryContainer = TwilightMauve,
     onPrimaryContainer = Color(0xFFE5E5E5),
     secondary = Secondary,
     onSecondary = OnSecondary,
-    secondaryContainer = AccentSageGray,
+    secondaryContainer = TwilightPurple,
     onSecondaryContainer = Color(0xFFE5E5E5),
-    tertiary = AccentGolden,
+    tertiary = TwilightRose,
     onTertiary = OnPrimary,
-    tertiaryContainer = AccentTerracotta,
+    tertiaryContainer = TwilightBeige,
     onTertiaryContainer = Color(0xFFE5E5E5),
     background = Color(0xFF1A1A1A),  // Dark background
     onBackground = Color(0xFFE5E5E5),  // Light text on dark
@@ -45,15 +45,15 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = AccentSageGray,
+    primaryContainer = TwilightBeige,
     onPrimaryContainer = OnBackground,
     secondary = Secondary,
     onSecondary = OnSecondary,
-    secondaryContainer = AccentSageGray,
+    secondaryContainer = TwilightBeige,
     onSecondaryContainer = OnBackground,
-    tertiary = AccentGolden,
+    tertiary = TwilightPurple,
     onTertiary = OnPrimary,
-    tertiaryContainer = AccentCream,
+    tertiaryContainer = TwilightCream,
     onTertiaryContainer = OnBackground,
     background = Background,
     onBackground = OnBackground,
@@ -73,14 +73,19 @@ private val BlossomShapes = Shapes(
 @Composable
 fun BlossomTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    selectedTheme: com.example.blossom.ui.settings.AppTheme = com.example.blossom.ui.settings.AppTheme.TWILIGHT_MYSTIQUE,
     // Disable dynamic color to ensure consistent mindful theme
     dynamicColor: Boolean = false,
     // Immersive mode options
     hideStatusBar: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // Always use our custom mindful color scheme
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    // Use theme provider to get the appropriate color scheme
+    val colorScheme = if (darkTheme) {
+        ThemeProvider.getDarkColorScheme(selectedTheme)
+    } else {
+        ThemeProvider.getLightColorScheme(selectedTheme)
+    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

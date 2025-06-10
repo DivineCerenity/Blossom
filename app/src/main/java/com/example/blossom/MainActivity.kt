@@ -8,9 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel // IMPORTANT import
 import com.example.blossom.ui.dashboard.DashboardViewModel
+import com.example.blossom.ui.settings.SettingsViewModel
 import com.example.blossom.ui.theme.BlossomTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -27,8 +30,14 @@ class MainActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         setContent {
-            BlossomTheme {
-                BlossomApp() // <-- That's it! Just call our new main app composable.
+            // Get the current theme from settings
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val settingsUiState by settingsViewModel.uiState.collectAsState()
+
+            BlossomTheme(
+                selectedTheme = settingsUiState.selectedTheme
+            ) {
+                BlossomApp()
             }
         }
     }

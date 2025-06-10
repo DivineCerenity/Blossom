@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.ChecklistRtl
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -18,8 +19,9 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Prayers : Screen("prayers", "Prayers", Icons.Default.FavoriteBorder)
     object Meditate : Screen("meditate", "Meditate", Icons.Default.SelfImprovement)
 
-    // This screen is not on the bottom bar, so its label and icon can be empty/placeholders.
+    // Screens not on the bottom bar
     object AddEditJournal : Screen("addEditJournal", "", Icons.Default.Home)
+    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
 
 // This list defines the items that appear in the bottom navigation bar.

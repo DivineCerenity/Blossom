@@ -1,6 +1,8 @@
 package com.example.blossom
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +19,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.blossom.ui.components.GradientText
+import com.example.blossom.ui.settings.SettingsScreen
+import com.example.blossom.ui.settings.SettingsViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blossom.ui.journal.AddEditJournalScreen
 import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
@@ -36,6 +41,10 @@ import androidx.compose.ui.graphics.Color
 fun BlossomApp() {
     val navController = rememberNavController()
 
+    // Get current theme for dynamic gradient text
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    val settingsUiState by settingsViewModel.uiState.collectAsState()
+
     Scaffold(
             topBar = {
                 // Use CenterAlignedTopAppBar for a centered title
@@ -43,14 +52,22 @@ fun BlossomApp() {
                     title = {
                         GradientText(
                             text = "Blossom",
-                            style = TextStyle(
-                                // Use the existing font from your theme, but override the size
-                                fontSize = 50.sp, // Increase the font size (adjust as you like)
-                                // fontWeight is already handled by your FontFamily, but you can force it if needed
-                                // fontWeight = FontWeight.Bold
-                            ),
-                            modifier = Modifier.padding(top = 8.dp) // Add padding to move the title down
+                            theme = settingsUiState.selectedTheme,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                navController.navigate(Screen.Settings.route)
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = Color.Transparent
@@ -93,6 +110,12 @@ fun BlossomApp() {
             }
             composable(Screen.Prayers.route) {
                 PrayerRequestsScreen()
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
 
             composable(Screen.JournalList.route) {

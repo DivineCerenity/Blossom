@@ -2,6 +2,7 @@ package com.example.blossom.di
 
 import android.content.Context
 import com.example.blossom.network.ApiService
+import com.example.blossom.ui.settings.SettingsRepository
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -46,5 +47,12 @@ object AppModule {
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
+    }
+
+    // --- Settings Repository ---
+    @Provides
+    @Singleton
+    fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
+        return SettingsRepository(context)
     }
 }

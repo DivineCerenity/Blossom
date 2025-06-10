@@ -307,23 +307,42 @@ fun JournalListScreen(
                                             )
                                         }
 
-                                        // Show featured image or fallback to first image
+                                        // Always show image space to maintain consistent height
                                         val displayImageUrl = entry.featuredImageUrl
                                             ?: entry.imageUrl
                                             ?: entry.imageUrls.takeIf { it.isNotEmpty() }?.split("|")?.firstOrNull()
 
-                                        if (displayImageUrl != null) {
-                                            Image(
-                                                painter = rememberAsyncImagePainter(model = displayImageUrl),
-                                                contentDescription = "Journal Image",
-                                                modifier = Modifier
-                                                    .size(80.dp)
-                                                    .clip(MaterialTheme.shapes.medium)
-                                                    .clickable { fullscreenImageUrl = displayImageUrl },
-                                                contentScale = ContentScale.Crop
-                                            )
-                                            Spacer(modifier = Modifier.width(16.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(MaterialTheme.shapes.medium)
+                                                .background(
+                                                    if (displayImageUrl != null) Color.Transparent
+                                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                                )
+                                        ) {
+                                            if (displayImageUrl != null) {
+                                                Image(
+                                                    painter = rememberAsyncImagePainter(model = displayImageUrl),
+                                                    contentDescription = "Journal Image",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .clickable { fullscreenImageUrl = displayImageUrl },
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            } else {
+                                                // Placeholder for entries without images
+                                                Icon(
+                                                    Icons.Default.Image,
+                                                    contentDescription = "No image",
+                                                    modifier = Modifier
+                                                        .align(Alignment.Center)
+                                                        .size(32.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                                )
+                                            }
                                         }
+                                        Spacer(modifier = Modifier.width(16.dp))
                                     }
                                 }
                             }

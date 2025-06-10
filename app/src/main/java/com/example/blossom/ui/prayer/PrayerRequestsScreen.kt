@@ -137,7 +137,11 @@ fun PrayerRequestsScreen(
                         PrayerRequestCard(
                             prayerRequest = prayerRequest,
                             onToggleAnswered = { viewModel.toggleAnswered(it) },
-                            onDelete = { viewModel.deletePrayerRequest(it) }
+                            onDelete = { viewModel.deletePrayerRequest(it) },
+                            onEdit = {
+                                // TODO: Implement edit functionality
+                                // For now, just show a placeholder message
+                            }
                         )
                     }
                 }
@@ -194,7 +198,8 @@ fun StatsCard(
 fun PrayerRequestCard(
     prayerRequest: PrayerRequest,
     onToggleAnswered: (PrayerRequest) -> Unit,
-    onDelete: (PrayerRequest) -> Unit
+    onDelete: (PrayerRequest) -> Unit,
+    onEdit: (PrayerRequest) -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     
@@ -247,8 +252,18 @@ fun PrayerRequestCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { 
-                                Text(if (prayerRequest.isAnswered) "Mark as Unanswered" else "Mark as Answered") 
+                            text = { Text("Edit") },
+                            onClick = {
+                                onEdit(prayerRequest)
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Edit, contentDescription = null)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(if (prayerRequest.isAnswered) "Mark as Unanswered" else "Mark as Answered")
                             },
                             onClick = {
                                 onToggleAnswered(prayerRequest)
@@ -256,7 +271,7 @@ fun PrayerRequestCard(
                             },
                             leadingIcon = {
                                 Icon(
-                                    if (prayerRequest.isAnswered) Icons.Default.RadioButtonUnchecked 
+                                    if (prayerRequest.isAnswered) Icons.Default.RadioButtonUnchecked
                                     else Icons.Default.CheckCircle,
                                     contentDescription = null
                                 )
