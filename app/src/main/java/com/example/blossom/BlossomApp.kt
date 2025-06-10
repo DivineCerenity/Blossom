@@ -17,6 +17,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.blossom.ui.components.GradientText // <-- Import the new component
+import com.example.blossom.ui.components.ElegantBackground
+import com.example.blossom.ui.components.ScreenBackground
+import com.example.blossom.ui.components.ScreenType
 import com.example.blossom.ui.journal.AddEditJournalScreen
 import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
@@ -28,53 +31,65 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import com.example.blossom.ui.theme.GlassWhite80
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlossomApp() {
     val navController = rememberNavController()
 
-    Scaffold(
-        topBar = {
-            // Use CenterAlignedTopAppBar for a centered title
-            CenterAlignedTopAppBar(
-                title = {
-                    GradientText(
-                        text = "Blossom",
-                        style = TextStyle(
-                            // Use the existing font from your theme, but override the size
-                            fontSize = 50.sp, // Increase the font size (adjust as you like)
-                            // fontWeight is already handled by your FontFamily, but you can force it if needed
-                            // fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(top = 8.dp) // Add padding to move the title down
+    ScreenBackground(
+        screenType = ScreenType.Default
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent, // Make scaffold transparent to show background
+            topBar = {
+                // Use CenterAlignedTopAppBar for a centered title
+                CenterAlignedTopAppBar(
+                    title = {
+                        GradientText(
+                            text = "Blossom",
+                            style = TextStyle(
+                                // Use the existing font from your theme, but override the size
+                                fontSize = 50.sp, // Increase the font size (adjust as you like)
+                                // fontWeight is already handled by your FontFamily, but you can force it if needed
+                                // fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.padding(top = 8.dp) // Add padding to move the title down
+                        )
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent
                     )
-                }
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
+                )
+            },
+            bottomBar = {
+                NavigationBar(
+                    containerColor = GlassWhite80,
+                    tonalElevation = 8.dp
+                ) {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = navBackStackEntry?.destination
 
-                bottomNavItems.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                    bottomNavItems.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = screen.label) },
+                            label = { Text(screen.label) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
-        }
     ) { innerPadding ->
         NavHost(navController, startDestination = Screen.Home.route, Modifier.padding(innerPadding)) {
             composable(Screen.Home.route) {
@@ -140,4 +155,5 @@ fun BlossomApp() {
             }
         }
     }
+}
 }

@@ -6,7 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.TextStyle
-import com.example.blossom.ui.theme.DancingScript // <-- IMPORTANT: Import your existing font family
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.blossom.ui.theme.DancingScript
+import com.example.blossom.ui.theme.AccentBlueGray
+import com.example.blossom.ui.theme.AccentGolden
+import com.example.blossom.ui.theme.AccentTerracotta
 
 @Composable
 fun GradientText(
@@ -14,22 +19,24 @@ fun GradientText(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.displaySmall
 ) {
-    // Define the gradient colors. You can customize these!
-    // These will come from your ui/theme/Color.kt file
+    // 🎨 BEAUTIFUL EARTH-TONE GRADIENT 🎨
+    // Using your gorgeous palette for perfect harmony!
     val gradientColors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.tertiary
+        AccentBlueGray,    // Sophisticated blue-gray start
+        AccentGolden,      // Warm golden middle
+        AccentTerracotta   // Rich terracotta end
     )
 
     Text(
         text = text,
         modifier = modifier,
         style = style.copy(
-            // Apply the gradient brush to the text color
+            // 🌟 PREMIUM STYLING 🌟
             brush = Brush.linearGradient(colors = gradientColors),
-            // Apply your existing font family
-            fontFamily = DancingScript
+            fontFamily = DancingScript,
+            fontWeight = FontWeight.Bold,  // Make it bold for impact!
+            fontSize = 32.sp,              // Bigger size to make it pop!
+            letterSpacing = 1.2.sp         // Elegant letter spacing
         )
     )
 }

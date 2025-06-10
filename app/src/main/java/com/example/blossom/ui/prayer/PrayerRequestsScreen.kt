@@ -319,10 +319,10 @@ fun PrayerRequestCard(
 @Composable
 private fun getPriorityColor(priority: PrayerPriority): Color {
     return when (priority) {
-        PrayerPriority.LOW -> Color(0xFF4CAF50) // Green
-        PrayerPriority.MEDIUM -> Color(0xFFFFEB3B) // Yellow
-        PrayerPriority.HIGH -> Color(0xFFFF9800) // Orange
-        PrayerPriority.URGENT -> Color(0xFFF44336) // Red
+        PrayerPriority.LOW -> com.example.blossom.ui.theme.PriorityLow      // Sage green
+        PrayerPriority.MEDIUM -> com.example.blossom.ui.theme.PriorityMedium  // Warm amber
+        PrayerPriority.HIGH -> com.example.blossom.ui.theme.PriorityHigh     // Soft red
+        PrayerPriority.URGENT -> com.example.blossom.ui.theme.PriorityUrgent  // Deeper red
     }
 }
 

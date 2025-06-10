@@ -14,40 +14,50 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.material3.Shapes
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = PrimaryVariant,
-    onPrimaryContainer = OnPrimary,
+    primaryContainer = AccentBlueGray,
+    onPrimaryContainer = Color(0xFFE5E5E5),
     secondary = Secondary,
     onSecondary = OnSecondary,
-    secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = OnSecondary,
-    background = Background,
-    onBackground = OnBackground,
-    surface = Surface,
-    onSurface = OnSurface,
-    surfaceVariant = SurfaceVariant,
-    onSurfaceVariant = OnSurfaceVariant,
+    secondaryContainer = AccentSageGray,
+    onSecondaryContainer = Color(0xFFE5E5E5),
+    tertiary = AccentGolden,
+    onTertiary = OnPrimary,
+    tertiaryContainer = AccentTerracotta,
+    onTertiaryContainer = Color(0xFFE5E5E5),
+    background = Color(0xFF1A1A1A),  // Dark background
+    onBackground = Color(0xFFE5E5E5),  // Light text on dark
+    surface = Color(0xFF1A1A1A),  // Same as background for navbar
+    onSurface = Color(0xFFE5E5E5),  // Light text on dark surface
+    surfaceVariant = Color(0xFF2A2A2A),  // Darker surface variant
+    onSurfaceVariant = Color(0xFFB0B0B0),  // Medium light text
     error = Error
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = PrimaryVariant,
-    onPrimaryContainer = OnPrimary,
+    primaryContainer = AccentSageGray,
+    onPrimaryContainer = OnBackground,
     secondary = Secondary,
     onSecondary = OnSecondary,
-    secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = OnSecondary,
+    secondaryContainer = AccentSageGray,
+    onSecondaryContainer = OnBackground,
+    tertiary = AccentGolden,
+    onTertiary = OnPrimary,
+    tertiaryContainer = AccentCream,
+    onTertiaryContainer = OnBackground,
     background = Background,
     onBackground = OnBackground,
-    surface = Surface,
+    surface = Background,  // Make surface same as background for navbar
     onSurface = OnSurface,
     surfaceVariant = SurfaceVariant,
     onSurfaceVariant = OnSurfaceVariant,
@@ -63,24 +73,39 @@ private val BlossomShapes = Shapes(
 @Composable
 fun BlossomTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit // THIS IS THE CRITICAL PART
+    // Disable dynamic color to ensure consistent mindful theme
+    dynamicColor: Boolean = false,
+    // Immersive mode options
+    hideStatusBar: Boolean = false,
+    content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // Always use our custom mindful color scheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+
+            // 🎨 IMMERSIVE EXPERIENCE SETUP 🎨
+
+            if (hideStatusBar) {
+                // Option 1: Hide status bar completely for fullscreen experience
+                insetsController.hide(WindowInsetsCompat.Type.statusBars())
+            } else {
+                // Option 2: Keep status bar but make it blend seamlessly
+                window.statusBarColor = colorScheme.background.toArgb()
+                insetsController.isAppearanceLightStatusBars = !darkTheme
+            }
+
+            // 🌈 BEAUTIFUL NAVIGATION BAR STYLING 🌈
+            // Make navigation bar match your beautiful theme!
+            window.navigationBarColor = colorScheme.background.toArgb()
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+
+            // Optional: Make navigation bar semi-transparent for modern look
+            // window.navigationBarColor = Color.TRANSPARENT.toArgb()
+            // window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         }
     }
 
