@@ -16,10 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.blossom.ui.components.GradientText // <-- Import the new component
-import com.example.blossom.ui.components.ElegantBackground
-import com.example.blossom.ui.components.ScreenBackground
-import com.example.blossom.ui.components.ScreenType
+import com.example.blossom.ui.components.GradientText
 import com.example.blossom.ui.journal.AddEditJournalScreen
 import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
@@ -32,18 +29,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
-import com.example.blossom.ui.theme.GlassWhite80
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlossomApp() {
     val navController = rememberNavController()
 
-    ScreenBackground(
-        screenType = ScreenType.Default
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent, // Make scaffold transparent to show background
+    Scaffold(
             topBar = {
                 // Use CenterAlignedTopAppBar for a centered title
                 CenterAlignedTopAppBar(
@@ -65,10 +58,7 @@ fun BlossomApp() {
                 )
             },
             bottomBar = {
-                NavigationBar(
-                    containerColor = GlassWhite80,
-                    tonalElevation = 8.dp
-                ) {
+                NavigationBar {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
 
@@ -155,5 +145,4 @@ fun BlossomApp() {
             }
         }
     }
-}
 }
