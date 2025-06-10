@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,15 +18,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
 import com.example.blossom.ui.components.HintCard
+import com.example.blossom.ui.journal.FullScreenImageViewer
 import java.util.*
 // Unused imports can be removed, but these are correct
 import androidx.compose.material3.SwipeToDismissBox
@@ -55,6 +61,11 @@ fun JournalListScreen(
 
     // State for fullscreen image dialog
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
+    var selectedEntry by remember { mutableStateOf<JournalEntry?>(null) }
+    var showEntryDetail by remember { mutableStateOf(false) }
+    var showImageGallery by remember { mutableStateOf(false) }
+    var galleryImages by remember { mutableStateOf<List<String>>(emptyList()) }
+    var galleryStartIndex by remember { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -111,16 +122,10 @@ fun JournalListScreen(
                 singleLine = true
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddEntry,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Entry")
-            }
-        }
+
     ) { padding ->
-        val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
+        Box(modifier = Modifier.fillMaxSize()) {
+            val entryToDelete by viewModel.entryToDelete.collectAsState(initial = null)
 
         // Show the confirmation dialog if an entry is marked for deletion
         if (entryToDelete != null) {
@@ -148,6 +153,34 @@ fun JournalListScreen(
         // Show fullscreen image dialog if needed
         fullscreenImageUrl?.let { imageUrl ->
             ZoomableImageDialog(imageUrl = imageUrl, onDismiss = { fullscreenImageUrl = null })
+        }
+
+        // Show journal entry detail dialog
+        if (showEntryDetail && selectedEntry != null) {
+            JournalEntryDetailDialog(
+                entry = selectedEntry!!,
+                onDismiss = {
+                    showEntryDetail = false
+                    selectedEntry = null
+                },
+                onImageClick = { imageUrl ->
+                    fullscreenImageUrl = imageUrl
+                    showEntryDetail = false
+                }
+            )
+        }
+
+        // Show image gallery dialog
+        if (showImageGallery && galleryImages.isNotEmpty()) {
+            FullScreenImageViewer(
+                imageUrls = galleryImages,
+                initialImageIndex = galleryStartIndex,
+                onDismiss = {
+                    showImageGallery = false
+                    galleryImages = emptyList()
+                    galleryStartIndex = 0
+                }
+            )
         }
 
         when {
@@ -262,7 +295,11 @@ fun JournalListScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .clickable {
+                                            selectedEntry = entry
+                                            showEntryDetail = true
+                                        },
                                     shape = MaterialTheme.shapes.medium,
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                     colors = CardDefaults.cardColors(
@@ -333,7 +370,16 @@ fun JournalListScreen(
                                                     contentDescription = "Journal Image",
                                                     modifier = Modifier
                                                         .fillMaxSize()
-                                                        .clickable { fullscreenImageUrl = displayImageUrl },
+                                                        .clickable {
+                                                            val imageUrls = entry.imageUrls.split("|").filter { it.isNotBlank() }
+                                                            if (imageUrls.isNotEmpty()) {
+                                                                galleryImages = imageUrls
+                                                                galleryStartIndex = imageUrls.indexOf(displayImageUrl).takeIf { it >= 0 } ?: 0
+                                                                showImageGallery = true
+                                                            } else {
+                                                                fullscreenImageUrl = displayImageUrl
+                                                            }
+                                                        },
                                                     contentScale = ContentScale.Crop
                                                 )
                                             } else {
@@ -357,7 +403,10 @@ fun JournalListScreen(
                 }
             }
         }
+
+
     }
+}
 }
 
 // Zoomable fullscreen image dialog
@@ -430,5 +479,110 @@ private fun getMoodColor(mood: String): Color {
 }
 
 private fun formatTimestamp(timestamp: Long): String {
-    return SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(timestamp))
+    return SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date(timestamp))
 }
+
+@Composable
+fun JournalEntryDetailDialog(
+    entry: JournalEntry,
+    onDismiss: () -> Unit,
+    onImageClick: (String) -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header with mood and close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MoodIconDisplay(
+                        mood = entry.mood,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Title
+                Text(
+                    text = entry.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Date
+                Text(
+                    text = formatTimestamp(entry.creationTimestamp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Content
+                Text(
+                    text = entry.content,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Images if available
+                val imageUrls = entry.imageUrls.split("|").filter { it.isNotBlank() }
+                if (imageUrls.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(imageUrls) { imageUrl ->
+                            Card(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clickable { onImageClick(imageUrl) },
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(imageUrl),
+                                    contentDescription = "Journal image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+
+                    if (imageUrls.size > 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${imageUrls.size} photos • Tap to view full screen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+

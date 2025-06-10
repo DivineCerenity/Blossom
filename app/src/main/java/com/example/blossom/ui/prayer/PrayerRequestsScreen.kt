@@ -40,11 +40,21 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PrayerRequestsScreen(
-    viewModel: PrayerRequestsViewModel = hiltViewModel()
+    viewModel: PrayerRequestsViewModel = hiltViewModel(),
+    addPrayerTrigger: Boolean = false,
+    onAddPrayerTriggered: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
+
+    // Handle add prayer trigger from navigation
+    LaunchedEffect(addPrayerTrigger) {
+        if (addPrayerTrigger) {
+            showAddDialog = true
+            onAddPrayerTriggered()
+        }
+    }
     
     var selectedSortOption by remember { mutableStateOf(PrayerSortOption.NEWEST_FIRST) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
@@ -53,14 +63,6 @@ fun PrayerRequestsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Prayer Request")
-            }
-        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -418,7 +420,7 @@ fun PrayerRequestCard(
                     )
                 }
                 Text(
-                    text = SimpleDateFormat("MMM dd", Locale.getDefault())
+                    text = SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault())
                         .format(Date(prayerRequest.createdDate)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

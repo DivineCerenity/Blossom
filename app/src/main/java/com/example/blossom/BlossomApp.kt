@@ -1,13 +1,19 @@
 package com.example.blossom
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -45,6 +51,9 @@ fun BlossomApp() {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val settingsUiState by settingsViewModel.uiState.collectAsState()
 
+    // Shared state for triggering add dialogs
+    var triggerAddPrayer by remember { mutableStateOf(false) }
+
     Scaffold(
             topBar = {
                 // Use CenterAlignedTopAppBar for a centered title
@@ -74,26 +83,65 @@ fun BlossomApp() {
                     )
                 )
             },
+
             bottomBar = {
                 NavigationBar {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
+                    val currentRoute = currentDestination?.route
 
                     bottomNavItems.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.label) },
-                            label = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+
+                        // Special handling for Journal and Prayers tabs when selected
+                        if ((screen == Screen.JournalList || screen == Screen.Prayers) && isSelected) {
+                            NavigationBarItem(
+                                icon = {
+                                    Box(
+                                        modifier = androidx.compose.ui.Modifier
+                                            .size(28.dp)
+                                            .background(
+                                                // Use actual theme primary color
+                                                MaterialTheme.colorScheme.primary,
+                                                RoundedCornerShape(8.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = if (screen == Screen.JournalList) "Add Entry" else "Add Prayer",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = androidx.compose.ui.Modifier.size(18.dp)
+                                        )
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                },
+                                label = { Text(screen.label) },
+                                selected = true,
+                                onClick = {
+                                    if (screen == Screen.JournalList) {
+                                        navController.navigate(Screen.AddEditJournal.route)
+                                    } else {
+                                        triggerAddPrayer = true
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        } else {
+                            // Regular navigation items
+                            NavigationBarItem(
+                                icon = { Icon(screen.icon, contentDescription = screen.label) },
+                                label = { Text(screen.label) },
+                                selected = isSelected,
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -109,7 +157,10 @@ fun BlossomApp() {
                 ChecklistScreen()
             }
             composable(Screen.Prayers.route) {
-                PrayerRequestsScreen()
+                PrayerRequestsScreen(
+                    addPrayerTrigger = triggerAddPrayer,
+                    onAddPrayerTriggered = { triggerAddPrayer = false }
+                )
             }
 
             composable(Screen.Settings.route) {

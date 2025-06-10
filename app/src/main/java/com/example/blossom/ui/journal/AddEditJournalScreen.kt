@@ -138,11 +138,6 @@ fun AddEditJournalScreen(
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { saveJournalEntry() }) {
-                Icon(Icons.Default.Done, contentDescription = "Save Entry")
-            }
         }
     ) { paddingValues ->
         Column(
@@ -196,6 +191,27 @@ fun AddEditJournalScreen(
                     showFullScreenViewer = true
                 }
             )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Save Button - like prayer dialog
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onNavigateBack) {
+                    Text("Cancel")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { saveJournalEntry() },
+                    enabled = uiState.title.isNotBlank()
+                ) {
+                    Text(if (isEditing) "Save Changes" else "Save Entry")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
         }
     }
 
