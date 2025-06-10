@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,8 +24,16 @@ import com.example.blossom.data.PrayerPriority
 import com.example.blossom.data.PrayerRequest
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.blossom.ui.prayer.PrayerSortOption
+import com.example.blossom.ui.prayer.EditPrayerRequestDialog
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PrayerRequestsScreen(
     viewModel: PrayerRequestsViewModel = hiltViewModel()
@@ -33,6 +42,12 @@ fun PrayerRequestsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     
+    var selectedSortOption by remember { mutableStateOf(PrayerSortOption.NEWEST_FIRST) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    var editingPrayerRequest by remember { mutableStateOf<PrayerRequest?>(null) }
+    var prayerToDelete by remember { mutableStateOf<PrayerRequest?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -48,27 +63,52 @@ fun PrayerRequestsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Stats Cards
+            // Stats Cards and Sort Dropdown
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                StatsCard(
-                    title = "Active",
-                    count = uiState.activePrayerCount,
-                    color = MaterialTheme.colorScheme.primary,
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
-                )
-                StatsCard(
-                    title = "Answered",
-                    count = uiState.answeredPrayerCount,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.weight(1f)
-                )
+                ) {
+                    StatsCard(
+                        title = "Active",
+                        count = uiState.activePrayerCount,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatsCard(
+                        title = "Answered",
+                        count = uiState.answeredPrayerCount,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Box {
+                    IconButton(onClick = { sortMenuExpanded = true }) {
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuExpanded,
+                        onDismissRequest = { sortMenuExpanded = false }
+                    ) {
+                        PrayerSortOption.values().forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    selectedSortOption = option
+                                    sortMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
-            
+
             // Tab Row
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(
@@ -87,15 +127,26 @@ fun PrayerRequestsScreen(
                     text = { Text("All") }
                 )
             }
-            
+
             // Prayer Requests List
             val prayerRequests = when (selectedTab) {
                 0 -> uiState.activePrayerRequests
                 1 -> uiState.answeredPrayerRequests
                 else -> uiState.allPrayerRequests
             }
-            
-            if (prayerRequests.isEmpty()) {
+            // Sort logic
+            val sortedPrayerRequests = when (selectedSortOption) {
+                PrayerSortOption.PRIORITY_HIGH_FIRST -> prayerRequests.sortedByDescending { it.priority }
+                PrayerSortOption.PRIORITY_LOW_FIRST -> prayerRequests.sortedBy { it.priority }
+                PrayerSortOption.NEWEST_FIRST -> prayerRequests.sortedByDescending { it.createdDate }
+                PrayerSortOption.OLDEST_FIRST -> prayerRequests.sortedBy { it.createdDate }
+                PrayerSortOption.CATEGORY_A_TO_Z -> prayerRequests.sortedBy { it.category.displayName }
+                PrayerSortOption.CATEGORY_Z_TO_A -> prayerRequests.sortedByDescending { it.category.displayName }
+                PrayerSortOption.ANSWERED_FIRST -> prayerRequests.sortedByDescending { it.isAnswered }
+                PrayerSortOption.UNANSWERED_FIRST -> prayerRequests.sortedBy { it.isAnswered }
+            }
+
+            if (sortedPrayerRequests.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -133,14 +184,35 @@ fun PrayerRequestsScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(prayerRequests) { prayerRequest ->
-                        PrayerRequestCard(
-                            prayerRequest = prayerRequest,
-                            onToggleAnswered = { viewModel.toggleAnswered(it) },
-                            onDelete = { viewModel.deletePrayerRequest(it) },
-                            onEdit = {
-                                // TODO: Implement edit functionality
-                                // For now, just show a placeholder message
+                    items(sortedPrayerRequests, key = { it.id }) { prayerRequest ->
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { value: SwipeToDismissBoxValue ->
+                                when (value) {
+                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                        prayerToDelete = prayerRequest
+                                        showDeleteDialog = true
+                                        false // Wait for confirmation
+                                    }
+                                    SwipeToDismissBoxValue.EndToStart -> {
+                                        editingPrayerRequest = prayerRequest
+                                        false // Don't auto-dismiss
+                                    }
+                                    else -> false
+                                }
+                            }
+                        )
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {}, // Optionally add background visuals
+                            modifier = Modifier,
+                            content = {
+                                PrayerRequestCard(
+                                    prayerRequest = prayerRequest,
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {},
+                                        onLongClick = { viewModel.toggleAnswered(prayerRequest) }
+                                    )
+                                )
                             }
                         )
                     }
@@ -156,6 +228,44 @@ fun PrayerRequestsScreen(
             onSave = { title, description, category, priority ->
                 viewModel.addPrayerRequest(title, description, category, priority)
                 showAddDialog = false
+            }
+        )
+    }
+
+    // Edit Prayer Request Dialog
+    editingPrayerRequest?.let { request ->
+        EditPrayerRequestDialog(
+            prayerRequest = request,
+            onDismiss = { editingPrayerRequest = null },
+            onSave = { title, description, category, priority ->
+                viewModel.updatePrayerRequest(
+                    request.copy(
+                        title = title,
+                        description = description,
+                        category = category,
+                        priority = priority
+                    )
+                )
+                editingPrayerRequest = null
+            }
+        )
+    }
+
+    // Delete Confirmation Dialog
+    if (showDeleteDialog && prayerToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false; prayerToDelete = null },
+            title = { Text("Delete Prayer Request") },
+            text = { Text("Are you sure you want to delete this prayer request?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deletePrayerRequest(prayerToDelete!!)
+                    showDeleteDialog = false
+                    prayerToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false; prayerToDelete = null }) { Text("Cancel") }
             }
         )
     }
@@ -197,14 +307,10 @@ fun StatsCard(
 @Composable
 fun PrayerRequestCard(
     prayerRequest: PrayerRequest,
-    onToggleAnswered: (PrayerRequest) -> Unit,
-    onDelete: (PrayerRequest) -> Unit,
-    onEdit: (PrayerRequest) -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (prayerRequest.isAnswered) {
                 MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
@@ -229,7 +335,6 @@ fun PrayerRequestCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
                     if (prayerRequest.description.isNotBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -241,58 +346,8 @@ fun PrayerRequestCard(
                         )
                     }
                 }
-                
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                    }
-                    
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            onClick = {
-                                onEdit(prayerRequest)
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Edit, contentDescription = null)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(if (prayerRequest.isAnswered) "Mark as Unanswered" else "Mark as Answered")
-                            },
-                            onClick = {
-                                onToggleAnswered(prayerRequest)
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    if (prayerRequest.isAnswered) Icons.Default.RadioButtonUnchecked
-                                    else Icons.Default.CheckCircle,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            onClick = {
-                                onDelete(prayerRequest)
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Delete, contentDescription = null)
-                            }
-                        )
-                    }
-                }
             }
-            
             Spacer(modifier = Modifier.height(12.dp))
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -302,7 +357,6 @@ fun PrayerRequestCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Category Chip
                     AssistChip(
                         onClick = { },
                         label = { Text(prayerRequest.category.displayName) },
@@ -310,8 +364,6 @@ fun PrayerRequestCard(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     )
-                    
-                    // Priority Indicator
                     Box(
                         modifier = Modifier
                             .size(8.dp)
@@ -319,7 +371,6 @@ fun PrayerRequestCard(
                             .background(getPriorityColor(prayerRequest.priority))
                     )
                 }
-                
                 Text(
                     text = SimpleDateFormat("MMM dd", Locale.getDefault())
                         .format(Date(prayerRequest.createdDate)),
@@ -332,7 +383,7 @@ fun PrayerRequestCard(
 }
 
 @Composable
-private fun getPriorityColor(priority: PrayerPriority): Color {
+fun getPriorityColor(priority: PrayerPriority): Color {
     return when (priority) {
         PrayerPriority.LOW -> com.example.blossom.ui.theme.PriorityLow      // Sage green
         PrayerPriority.MEDIUM -> com.example.blossom.ui.theme.PriorityMedium  // Warm amber
@@ -377,7 +428,6 @@ fun AddPrayerRequestDialog(
                     maxLines = 3
                 )
 
-                // Category Dropdown
                 ExposedDropdownMenuBox(
                     expanded = showCategoryDropdown,
                     onExpandedChange = { showCategoryDropdown = it }
@@ -409,7 +459,6 @@ fun AddPrayerRequestDialog(
                     }
                 }
 
-                // Priority Dropdown
                 ExposedDropdownMenuBox(
                     expanded = showPriorityDropdown,
                     onExpandedChange = { showPriorityDropdown = it }
