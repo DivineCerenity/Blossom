@@ -1,5 +1,6 @@
 package com.example.blossom.ui.prayer
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,7 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blossom.data.PrayerCategory
 import com.example.blossom.data.PrayerPriority
 import com.example.blossom.data.PrayerRequest
+import com.example.blossom.ui.components.HintCard
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.blossom.ui.prayer.PrayerSortOption
@@ -182,8 +186,13 @@ fun PrayerRequestsScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                                        if (sortedPrayerRequests.isNotEmpty()) {
+                        item {
+                            HintCard(text = "Swipe left to edit, swipe right to delete. Long press to toggle answered.")
+                        }
+                    }
                     items(sortedPrayerRequests, key = { it.id }) { prayerRequest ->
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value: SwipeToDismissBoxValue ->
@@ -203,7 +212,44 @@ fun PrayerRequestsScreen(
                         )
                         SwipeToDismissBox(
                             state = dismissState,
-                            backgroundContent = {}, // Optionally add background visuals
+                                                        backgroundContent = {
+                                val direction = dismissState.dismissDirection
+                                val color by animateColorAsState(
+                                    when (dismissState.targetValue) {
+                                        SwipeToDismissBoxValue.Settled -> Color.Transparent
+                                                                                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
+                                    }
+                                )
+                                val icon = when (direction) {
+                                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
+                                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
+                                    SwipeToDismissBoxValue.Settled -> null
+                                }
+                                val scale by animateFloatAsState(
+                                    if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f
+                                )
+
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .background(color)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                                        else -> Alignment.Center
+                                    }
+                                ) {
+                                    icon?.let {
+                                        Icon(
+                                            it,
+                                            contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd) "Delete" else "Edit",
+                                            modifier = Modifier.scale(scale)
+                                        )
+                                    }
+                                }
+                            },
                             modifier = Modifier,
                             content = {
                                 PrayerRequestCard(

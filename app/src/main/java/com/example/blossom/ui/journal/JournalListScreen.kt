@@ -24,6 +24,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.blossom.data.JournalEntry
 import com.example.blossom.ui.theme.*
 import java.text.SimpleDateFormat
+import com.example.blossom.ui.components.HintCard
 import java.util.*
 // Unused imports can be removed, but these are correct
 import androidx.compose.material3.SwipeToDismissBox
@@ -179,6 +180,11 @@ fun JournalListScreen(
                         .fillMaxSize()
                         .padding(padding)
                 ) {
+                    if (entries.isNotEmpty()) {
+                        item {
+                            HintCard(text = "Swipe left to edit, swipe right to delete.")
+                        }
+                    }
                     items(
                         items = entries,
                         key = { it.id }
