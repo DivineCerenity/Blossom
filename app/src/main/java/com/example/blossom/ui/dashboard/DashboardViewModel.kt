@@ -2,7 +2,7 @@ package com.example.blossom.ui.dashboard // Or whatever package it's in
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.blossom.network.ApiService // Correct import
+import com.example.blossom.data.DailyVerseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +20,7 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val apiService: ApiService // We inject the ApiService, we DO NOT use BibleApi
+    private val dailyVerseRepository: DailyVerseRepository // Inject the repository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -33,24 +33,24 @@ class DashboardViewModel @Inject constructor(
     fun fetchVerse() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
-                // We now call the injected apiService directly
-                val response = apiService.getRandomVerse()
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        verseText = response.verse.details.verseText,
-                        verseReference = response.verse.details.reference
-                    )
+            dailyVerseRepository.getTodaysVerse()
+                .onSuccess { dailyVerse ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            verseText = dailyVerse.verse,
+                            verseReference = dailyVerse.reference
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Failed to load verse. Please check your connection."
-                    )
+                .onFailure {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Failed to load verse. Please check your connection."
+                        )
+                    }
                 }
-            }
         }
     }
 }

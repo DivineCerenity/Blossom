@@ -22,7 +22,13 @@ fun AddEditHabitScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (habitId == null) "Add Habit" else "Edit Habit") },
+                title = {
+    Text(
+        text = if (habitId == null) "Add Habit" else "Edit Habit",
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onPrimary
+    )
+},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

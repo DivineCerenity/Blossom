@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.blossom.data.BlossomDatabase
 import com.example.blossom.data.DailyHabitDao
+import com.example.blossom.data.DailyVerseDao
 import com.example.blossom.data.JournalDao
 import com.example.blossom.data.JournalTagDao
 import com.example.blossom.data.PrayerRequestDao
@@ -27,7 +28,7 @@ object DatabaseModule {
             "blossom_database"
         )
         .fallbackToDestructiveMigration() // Allow destructive migration for all version changes
-        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7) // Add migrations
+        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7, BlossomDatabase.MIGRATION_7_8) // Add migrations
         .build()
     }
 
@@ -53,5 +54,11 @@ object DatabaseModule {
     @Singleton
     fun provideJournalTagDao(database: BlossomDatabase): JournalTagDao {
         return database.journalTagDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDailyVerseDao(database: BlossomDatabase): DailyVerseDao {
+        return database.dailyVerseDao()
     }
 }

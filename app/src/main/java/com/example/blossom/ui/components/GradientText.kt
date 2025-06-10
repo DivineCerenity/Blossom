@@ -53,10 +53,8 @@ fun GradientText(
         style = TextStyle(
             // 🌟 PREMIUM STYLING - THEME-AWARE GRADIENT! 🌟
             brush = Brush.linearGradient(colors = gradientColors),
-            fontFamily = DancingScript,
-            fontWeight = FontWeight.Bold,  // Make it bold for impact!
-            fontSize = 64.sp,              // DOUBLED! Much bigger size to really pop!
-            letterSpacing = 1.5.sp         // Elegant letter spacing
+            fontFamily = Marcellus,
+            fontSize = 40.sp // Large, but fits well in the app bar
         )
     )
 }

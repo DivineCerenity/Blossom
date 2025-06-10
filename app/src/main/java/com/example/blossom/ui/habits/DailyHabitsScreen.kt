@@ -65,9 +65,10 @@ fun DailyHabitsScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        "Daily Habits",
-                        style = MaterialTheme.typography.titleLarge
-                    ) 
+                        text = "Daily Habits",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
