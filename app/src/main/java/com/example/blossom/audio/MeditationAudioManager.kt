@@ -146,17 +146,26 @@ class MeditationAudioManager @Inject constructor(
             // Stop all background sounds
             activeBackgroundPlayers.values.forEach { player ->
                 try {
-                    if (player.isPlaying) {
-                        fadeOutPlayer(player) {
-                            try {
-                                player.stop()
-                                player.release()
-                            } catch (e: Exception) {
-                                Log.e("MeditationAudio", "Error stopping background player", e)
+                    try {
+                        if (player.isPlaying) {
+                            fadeOutPlayer(player) {
+                                try {
+                                    player.stop()
+                                    player.release()
+                                } catch (e: Exception) {
+                                    Log.e("MeditationAudio", "Error stopping background player", e)
+                                }
                             }
+                        } else {
+                            player.release()
                         }
-                    } else {
-                        player.release()
+                    } catch (e: IllegalStateException) {
+                        Log.w("MeditationAudio", "MediaPlayer already in invalid state")
+                        try {
+                            player.release()
+                        } catch (e2: Exception) {
+                            Log.w("MeditationAudio", "Error releasing invalid player")
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("MeditationAudio", "Error stopping background player", e)
@@ -165,32 +174,49 @@ class MeditationAudioManager @Inject constructor(
             activeBackgroundPlayers.clear()
 
             // Stop main background sound (backward compatibility)
-            if (mediaPlayer?.isPlaying == true) {
-                fadeOut(1000) {
-                    try {
-                        mediaPlayer?.apply {
-                            if (isPlaying) {
-                                stop()
+            try {
+                if (mediaPlayer?.isPlaying == true) {
+                    fadeOut(1000) {
+                        try {
+                            mediaPlayer?.apply {
+                                if (isPlaying) {
+                                    stop()
+                                }
+                                release()
                             }
-                            release()
+                            mediaPlayer = null
+                        } catch (e: Exception) {
+                            Log.e("MeditationAudio", "Error in fade out completion", e)
                         }
-                        mediaPlayer = null
-                    } catch (e: Exception) {
-                        Log.e("MeditationAudio", "Error in fade out completion", e)
                     }
+                } else {
+                    try {
+                        mediaPlayer?.release()
+                    } catch (e: IllegalStateException) {
+                        Log.w("MeditationAudio", "MediaPlayer already released")
+                    }
+                    mediaPlayer = null
                 }
-            } else {
-                mediaPlayer?.release()
+            } catch (e: IllegalStateException) {
+                Log.w("MeditationAudio", "MediaPlayer in invalid state")
                 mediaPlayer = null
             }
 
             // Stop all active bell sounds immediately
             activeBellPlayers.forEach { bellPlayer ->
                 try {
-                    if (bellPlayer.isPlaying) {
-                        bellPlayer.stop()
+                    try {
+                        if (bellPlayer.isPlaying) {
+                            bellPlayer.stop()
+                        }
+                    } catch (e: IllegalStateException) {
+                        Log.w("MeditationAudio", "Bell player already in invalid state")
                     }
-                    bellPlayer.release()
+                    try {
+                        bellPlayer.release()
+                    } catch (e: IllegalStateException) {
+                        Log.w("MeditationAudio", "Bell player already released")
+                    }
                 } catch (e: Exception) {
                     Log.e("MeditationAudio", "Error stopping bell player", e)
                 }
@@ -215,10 +241,14 @@ class MeditationAudioManager @Inject constructor(
     fun pauseSound() {
         try {
             mediaPlayer?.apply {
-                if (isPlaying) {
-                    pause()
-                    _audioState.value = _audioState.value.copy(isPlaying = false)
-                    Log.d("MeditationAudio", "Paused sound")
+                try {
+                    if (isPlaying) {
+                        pause()
+                        _audioState.value = _audioState.value.copy(isPlaying = false)
+                        Log.d("MeditationAudio", "Paused sound")
+                    }
+                } catch (e: IllegalStateException) {
+                    Log.w("MeditationAudio", "Cannot pause - MediaPlayer in invalid state")
                 }
             }
         } catch (e: Exception) {
@@ -232,10 +262,14 @@ class MeditationAudioManager @Inject constructor(
     fun resumeSound() {
         try {
             mediaPlayer?.apply {
-                if (!isPlaying) {
-                    start()
-                    _audioState.value = _audioState.value.copy(isPlaying = true)
-                    Log.d("MeditationAudio", "Resumed sound")
+                try {
+                    if (!isPlaying) {
+                        start()
+                        _audioState.value = _audioState.value.copy(isPlaying = true)
+                        Log.d("MeditationAudio", "Resumed sound")
+                    }
+                } catch (e: IllegalStateException) {
+                    Log.w("MeditationAudio", "Cannot resume - MediaPlayer in invalid state")
                 }
             }
         } catch (e: Exception) {
@@ -248,10 +282,17 @@ class MeditationAudioManager @Inject constructor(
      */
     fun setVolume(volume: Float) {
         val clampedVolume = volume.coerceIn(0f, 1f)
-        
-        mediaPlayer?.setVolume(clampedVolume, clampedVolume)
+
+        try {
+            mediaPlayer?.setVolume(clampedVolume, clampedVolume)
+        } catch (e: IllegalStateException) {
+            Log.w("MeditationAudio", "Cannot set volume - MediaPlayer in invalid state")
+        } catch (e: Exception) {
+            Log.e("MeditationAudio", "Error setting volume", e)
+        }
+
         _audioState.value = _audioState.value.copy(volume = clampedVolume)
-        
+
         Log.d("MeditationAudio", "Set volume to: $clampedVolume")
     }
     
@@ -262,7 +303,14 @@ class MeditationAudioManager @Inject constructor(
         val newMutedState = !_audioState.value.isMuted
         val volume = if (newMutedState) 0f else _audioState.value.volume
 
-        mediaPlayer?.setVolume(volume, volume)
+        try {
+            mediaPlayer?.setVolume(volume, volume)
+        } catch (e: IllegalStateException) {
+            Log.w("MeditationAudio", "Cannot toggle mute - MediaPlayer in invalid state")
+        } catch (e: Exception) {
+            Log.e("MeditationAudio", "Error toggling mute", e)
+        }
+
         _audioState.value = _audioState.value.copy(isMuted = newMutedState)
 
         Log.d("MeditationAudio", "Toggled mute: $newMutedState")

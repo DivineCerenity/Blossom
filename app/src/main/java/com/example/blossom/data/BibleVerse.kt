@@ -21,4 +21,4 @@ data class BibleVerse(
 
     @Json(name = "reference")
     val reference: String
-)God, that is so beautiful.
+)

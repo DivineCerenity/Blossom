@@ -48,6 +48,16 @@ import kotlin.math.atan2
 import kotlin.math.sqrt
 import kotlin.math.PI
 import com.example.blossom.ui.components.*
+import com.example.blossom.data.BreathingPattern
+import com.example.blossom.data.BreathingPatterns
+import com.example.blossom.ui.components.MeditationPhase
+import com.example.blossom.ui.components.PreparationCountdown
+import com.example.blossom.ui.components.CompletionCelebration
+import com.example.blossom.ui.components.MeditationBottomSheet
+import com.example.blossom.ui.components.MeditationSettings
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Air
 
 @Composable
 fun MeditateScreen() {
@@ -61,9 +71,38 @@ fun MeditateScreen() {
     var showSoundPicker by remember { mutableStateOf(false) }
     var showDurationPicker by remember { mutableStateOf(false) }
     var lastBellTime by remember { mutableIntStateOf(0) }
+    var meditationPhase by remember { mutableStateOf(MeditationPhase.PREPARATION) }
+    var showPreparation by remember { mutableStateOf(false) }
+    var showCompletion by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     // Audio state
     val audioState by viewModel.audioState.collectAsStateWithLifecycle()
+
+    // Meditation settings state
+    var meditationSettings by remember {
+        mutableStateOf(
+            MeditationSettings(
+                duration = selectedDuration,
+                selectedSound = null,
+                volume = 0.7f,
+                intervalBellsEnabled = false,
+                intervalMinutes = 5,
+                breathingGuideEnabled = false,
+                breathingPattern = BreathingPatterns.BOX_BREATHING
+            )
+        )
+    }
+
+    // Update settings when audio state changes
+    LaunchedEffect(audioState) {
+        meditationSettings = meditationSettings.copy(
+            selectedSound = audioState.currentSound,
+            volume = audioState.volume,
+            intervalBellsEnabled = audioState.intervalBellsEnabled,
+            intervalMinutes = audioState.intervalMinutes
+        )
+    }
 
     // Perfect 5-second breathing animation (5s expand, 5s contract)
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
@@ -109,7 +148,9 @@ fun MeditateScreen() {
             if (timeRemaining == 0) {
                 isRunning = false
                 lastBellTime = 0 // Reset bell counter
-                // Timer completed!
+                meditationPhase = MeditationPhase.COMPLETION
+                showCompletion = true
+                viewModel.stopSound() // Stop any playing sounds
             }
         }
     }
@@ -145,59 +186,71 @@ fun MeditateScreen() {
                 MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
             )
         )
+
+        // 🌟 CLEAN NON-SCROLLABLE MEDITATION SCREEN
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(32.dp)
         ) {
-            // Add some top spacing
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Elegant Hint Card
-            if (!isRunning) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+            // 💡 SMART CONTEXTUAL HINT
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
 
-                        Text(
-                            text = "Tap timer to start • Long press to change duration",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Text(
+                        text = when {
+                            isRunning && isPaused -> "Tap to resume • Long press to stop"
+                            isRunning -> "Tap to pause • Long press to stop"
+                            else -> "Tap timer to start • Long press for settings"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            } else {
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Beautiful Meditation Timer Circle with Gestures
-            MeditationTimerCircle(
-                progress = if (totalTime > 0) (totalTime - timeRemaining).toFloat() / totalTime else 0f,
+            // 🌬️⏰ UNIFIED BREATHING TIMER - The Heart of Meditation
+            UnifiedBreathingTimer(
+                breathingState = if (meditationSettings.breathingGuideEnabled && meditationSettings.breathingPattern != null) {
+                    // Create breathing state when guide is enabled
+                    val pattern = meditationSettings.breathingPattern!!
+                    val elapsed = totalTime - timeRemaining
+                    val cycleElapsed = elapsed % pattern.totalCycleSeconds
+                    com.example.blossom.data.BreathingGuideState(
+                        isActive = isRunning && !isPaused,
+                        currentPattern = pattern,
+                        elapsedSeconds = elapsed,
+                        currentPhase = pattern.getCurrentPhase(cycleElapsed),
+                        phaseProgress = pattern.getPhaseProgress(cycleElapsed),
+                        cycleCount = elapsed / pattern.totalCycleSeconds,
+                        isGuideVisible = true
+                    )
+                } else {
+                    // Empty breathing state when guide is disabled
+                    com.example.blossom.data.BreathingGuideState()
+                },
+                timerProgress = if (totalTime > 0) (totalTime - timeRemaining).toFloat() / totalTime else 0f,
                 timeRemaining = timeRemaining,
-                isRunning = isRunning,
-                isPaused = isPaused,
-                breathingScale = if (isRunning && !isPaused) breathingScale else 1f,
+                isTimerRunning = isRunning,
                 onTap = {
                     // Tap to play/pause
                     if (isRunning) {
@@ -208,288 +261,219 @@ fun MeditateScreen() {
                             viewModel.resumeSound()
                         }
                     } else {
-                        // Start meditation
-                        isRunning = true
-                        isPaused = false
-                        totalTime = selectedDuration * 60
-                        timeRemaining = selectedDuration * 60
+                        // Start preparation countdown
+                        meditationPhase = MeditationPhase.PREPARATION
+                        showPreparation = true
+                        totalTime = meditationSettings.duration * 60
+                        timeRemaining = meditationSettings.duration * 60
+                        selectedDuration = meditationSettings.duration
                         lastBellTime = 0
-                        if (audioState.currentSound != null) {
-                            viewModel.resumeSound()
-                        }
                     }
                 },
                 onLongPress = {
-                    // Long press to edit duration (only when not running)
-                    if (!isRunning) {
-                        showDurationPicker = true
+                    if (isRunning) {
+                        // Long press to stop meditation
+                        isRunning = false
+                        isPaused = false
+                        timeRemaining = selectedDuration * 60
+                        totalTime = selectedDuration * 60
+                        lastBellTime = 0
+                        viewModel.stopSound()
+                        meditationPhase = MeditationPhase.PREPARATION
+                    } else {
+                        // Long press to open settings
+                        showBottomSheet = true
                     }
                 }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
 
-            // Sound Control Button
-            Row(
-                horizontalArrangement = Arrangement.Center,
+
+            // 📊 SMART STATUS DISPLAY
+            SmartStatusDisplay(
+                settings = meditationSettings,
+                isRunning = isRunning,
+                isPaused = isPaused,
+                audioState = audioState,
+                onVolumeChanged = { newVolume ->
+                    meditationSettings = meditationSettings.copy(volume = newVolume)
+                    viewModel.setVolume(newVolume)
+                },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedButton(
-                    onClick = { showSoundPicker = true },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (audioState.currentSound != null) Icons.Default.PlayArrow else Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = when {
-                                audioState.activeSounds.isNotEmpty() -> {
-                                    if (audioState.activeSounds.size == 1) {
-                                        audioState.activeSounds.first().name
-                                    } else {
-                                        "${audioState.activeSounds.size} sounds playing"
-                                    }
-                                }
-                                audioState.currentSound != null -> audioState.currentSound!!.name
-                                else -> "Choose Sound"
-                            },
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        // Show when multiple sounds are active
-                        if (audioState.activeSounds.size > 1) {
-                            Text(
-                                text = audioState.activeSounds.joinToString(" + ") { it.name },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2
-                            )
-                        } else if (audioState.currentSound != null && audioState.intervalBellsEnabled) {
-                            Text(
-                                text = "Background + Interval Bells",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Volume Control (when sound is selected)
-            if (audioState.currentSound != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Volume",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "🔉",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            Slider(
-                                value = audioState.volume,
-                                onValueChange = { volume ->
-                                    viewModel.setVolume(volume)
-                                },
-                                valueRange = 0f..1f,
-                                modifier = Modifier.weight(1f),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = MaterialTheme.colorScheme.primary,
-                                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                                    inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                                )
-                            )
-
-                            Text(
-                                text = "🔊",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-
-                        Text(
-                            text = "${(audioState.volume * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Interval Bells Settings (only when not running)
-            if (!isRunning) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = "Interval Bells",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            Switch(
-                                checked = audioState.intervalBellsEnabled,
-                                onCheckedChange = { viewModel.toggleIntervalBells() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                )
-                            )
-                        }
-
-                        if (audioState.intervalBellsEnabled) {
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Text(
-                                text = "Bell every ${audioState.intervalMinutes} minutes",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                listOf(1, 3, 5, 10).forEach { minutes ->
-                                    FilterChip(
-                                        onClick = { viewModel.setIntervalMinutes(minutes) },
-                                        label = { Text("${minutes}m") },
-                                        selected = audioState.intervalMinutes == minutes,
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Clean spacing
-            if (!isRunning) {
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-            // Show stop button only when running (for emergency stop)
-            if (isRunning) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            isRunning = false
-                            isPaused = false
-                            timeRemaining = selectedDuration * 60
-                            totalTime = selectedDuration * 60
-                            lastBellTime = 0
-                            viewModel.stopSound()
-                        },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Stop Meditation")
-                    }
-                }
-            }
-
-            // Add bottom spacing to ensure button is visible
-            Spacer(modifier = Modifier.height(32.dp))
+            )
         }
 
-        // Sound Picker Dialog
-        SoundPickerDialog(
-            isVisible = showSoundPicker,
-            currentSound = audioState.currentSound,
-            onSoundSelected = { sound ->
-                if (sound != null) {
-                    viewModel.playSound(sound)
+        // 🎭 PREPARATION COUNTDOWN OVERLAY
+        if (showPreparation) {
+            PreparationCountdown(
+                onCountdownComplete = {
+                    showPreparation = false
+                    meditationPhase = MeditationPhase.ACTIVE
+                    isRunning = true
+                    isPaused = false
+                    if (audioState.currentSound != null) {
+                        viewModel.resumeSound()
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // 🎉 COMPLETION CELEBRATION OVERLAY
+        if (showCompletion) {
+            CompletionCelebration(
+                sessionDuration = selectedDuration,
+                breathingPattern = if (meditationSettings.breathingGuideEnabled) meditationSettings.breathingPattern?.name ?: "" else "",
+                onCelebrationComplete = {
+                    showCompletion = false
+                    meditationPhase = MeditationPhase.PREPARATION
+                    // Reset for next session
+                    timeRemaining = selectedDuration * 60
+                    totalTime = selectedDuration * 60
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // 🌟 MEDITATION BOTTOM SHEET
+        MeditationBottomSheet(
+            isVisible = showBottomSheet,
+            currentSettings = meditationSettings,
+            availableSounds = com.example.blossom.data.MeditationSounds.allSounds,
+            onSettingsChanged = { newSettings ->
+                meditationSettings = newSettings
+                // Apply settings to ViewModel
+                if (newSettings.selectedSound != null) {
+                    viewModel.playSound(newSettings.selectedSound!!)
                 } else {
                     viewModel.stopSound()
                 }
-                showSoundPicker = false
+                viewModel.setVolume(newSettings.volume)
+                if (newSettings.intervalBellsEnabled) {
+                    viewModel.toggleIntervalBells()
+                }
+                viewModel.setIntervalMinutes(newSettings.intervalMinutes)
             },
-            onDismiss = { showSoundPicker = false }
+            onSave = { settings ->
+                showBottomSheet = false
+                // Save settings and return to main screen
+                meditationSettings = settings
+                selectedDuration = settings.duration
+                // Settings are now visible in smart status display
+            },
+            onDismiss = { showBottomSheet = false }
         )
+    }
+}
 
-        // Duration Picker Dialog
-        DurationPickerDialog(
-            isVisible = showDurationPicker,
-            currentDuration = selectedDuration,
-            onDurationSelected = { duration ->
-                selectedDuration = duration
-                showDurationPicker = false
-            },
-            onDismiss = { showDurationPicker = false }
-        )
+/**
+ * 📊 SMART STATUS DISPLAY
+ * Shows relevant information based on current state
+ */
+@Composable
+private fun SmartStatusDisplay(
+    settings: MeditationSettings,
+    isRunning: Boolean,
+    isPaused: Boolean,
+    audioState: Any, // TODO: Fix type
+    onVolumeChanged: (Float) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    // Always provide a consistent height container to maintain timer centering
+    Box(
+        modifier = modifier.height(48.dp), // Fixed height to maintain layout
+        contentAlignment = Alignment.Center
+    ) {
+        if (!isRunning) {
+            // Show settings preview when not running
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            ) {
+            // Duration chip
+            item {
+                AssistChip(
+                    onClick = { },
+                    label = { Text("${settings.duration}m") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
+            }
+
+            // Sound chip (if selected)
+            if (settings.selectedSound != null) {
+                item {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(settings.selectedSound!!.name) },
+                        leadingIcon = {
+                            Text("🎵", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    )
+                }
+            }
+
+            // Breathing guide chip (if enabled)
+            if (settings.breathingGuideEnabled) {
+                item {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(settings.breathingPattern?.name ?: "Breathing") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Air,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            }
+
+            // Interval bells chip (if enabled)
+            if (settings.intervalBellsEnabled) {
+                item {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text("Bells ${settings.intervalMinutes}m") },
+                        leadingIcon = {
+                            Text("🔔", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    )
+                }
+            }
+            }
+        } else {
+            // Show volume control when running
+            if (settings.selectedSound != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(text = "🔉", style = MaterialTheme.typography.bodyMedium)
+
+                    Slider(
+                        value = settings.volume,
+                        onValueChange = onVolumeChanged,
+                        valueRange = 0f..1f,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        )
+                    )
+
+                    Text(text = "🔊", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
     }
 }
 
