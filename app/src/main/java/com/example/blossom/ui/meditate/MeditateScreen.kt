@@ -3,12 +3,18 @@ package com.example.blossom.ui.meditate
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -23,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -33,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -50,18 +58,19 @@ fun MeditateScreen() {
     var timeRemaining by remember { mutableIntStateOf(selectedDuration * 60) } // seconds
     var totalTime by remember { mutableIntStateOf(selectedDuration * 60) }
     var showSoundPicker by remember { mutableStateOf(false) }
+    var showDurationPicker by remember { mutableStateOf(false) }
     var lastBellTime by remember { mutableIntStateOf(0) }
 
     // Audio state
     val audioState by viewModel.audioState.collectAsStateWithLifecycle()
 
-    // Enhanced breathing animation - more noticeable
+    // Perfect 5-second breathing animation (5s expand, 5s contract)
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val breathingScale by infiniteTransition.animateFloat(
         initialValue = 0.95f,
         targetValue = 1.15f, // Larger scale difference
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = EaseInOutSine), // Slightly faster
+            animation = tween(5000, easing = EaseInOutSine), // 5 seconds each way
             repeatMode = RepeatMode.Reverse
         ),
         label = "breathing_scale"
@@ -134,14 +143,77 @@ fun MeditateScreen() {
                 .padding(32.dp)
         ) {
             // Add some top spacing
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Beautiful Meditation Timer Circle
+            // Elegant Hint Card
+            if (!isRunning) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        Text(
+                            text = "Tap timer to start • Long press to change duration",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Beautiful Meditation Timer Circle with Gestures
             MeditationTimerCircle(
                 progress = if (totalTime > 0) (totalTime - timeRemaining).toFloat() / totalTime else 0f,
                 timeRemaining = timeRemaining,
                 isRunning = isRunning,
-                breathingScale = if (isRunning && !isPaused) breathingScale else 1f
+                isPaused = isPaused,
+                breathingScale = if (isRunning && !isPaused) breathingScale else 1f,
+                onTap = {
+                    // Tap to play/pause
+                    if (isRunning) {
+                        isPaused = !isPaused
+                        if (isPaused) {
+                            viewModel.pauseSound()
+                        } else {
+                            viewModel.resumeSound()
+                        }
+                    } else {
+                        // Start meditation
+                        isRunning = true
+                        isPaused = false
+                        totalTime = selectedDuration * 60
+                        timeRemaining = selectedDuration * 60
+                        lastBellTime = 0
+                        if (audioState.currentSound != null) {
+                            viewModel.resumeSound()
+                        }
+                    }
+                },
+                onLongPress = {
+                    // Long press to edit duration (only when not running)
+                    if (!isRunning) {
+                        showDurationPicker = true
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -164,10 +236,38 @@ fun MeditateScreen() {
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = audioState.currentSound?.name ?: "Choose Sound",
-                        fontWeight = FontWeight.Medium
-                    )
+                    Column {
+                        Text(
+                            text = when {
+                                audioState.activeSounds.isNotEmpty() -> {
+                                    if (audioState.activeSounds.size == 1) {
+                                        audioState.activeSounds.first().name
+                                    } else {
+                                        "${audioState.activeSounds.size} sounds playing"
+                                    }
+                                }
+                                audioState.currentSound != null -> audioState.currentSound!!.name
+                                else -> "Choose Sound"
+                            },
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        // Show when multiple sounds are active
+                        if (audioState.activeSounds.size > 1) {
+                            Text(
+                                text = audioState.activeSounds.joinToString(" + ") { it.name },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2
+                            )
+                        } else if (audioState.currentSound != null && audioState.intervalBellsEnabled) {
+                            Text(
+                                text = "Background + Interval Bells",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 
@@ -314,124 +414,38 @@ fun MeditateScreen() {
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Duration Selection (only when not running)
+            // Clean spacing
             if (!isRunning) {
-                Text(
-                    text = "Choose Duration",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Two rows of duration chips to prevent overflow
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        listOf(3, 5, 10).forEach { duration ->
-                            DurationChip(
-                                duration = duration,
-                                isSelected = selectedDuration == duration,
-                                onClick = { selectedDuration = duration }
-                            )
-                        }
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        listOf(15, 20).forEach { duration ->
-                            DurationChip(
-                                duration = duration,
-                                isSelected = selectedDuration == duration,
-                                onClick = { selectedDuration = duration }
-                            )
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-            // Control Buttons
+            // Show stop button only when running (for emergency stop)
             if (isRunning) {
-                // Running state - show pause/resume and stop buttons
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Pause/Resume Button
-                    FloatingActionButton(
-                        onClick = {
-                            isPaused = !isPaused
-                            // Handle audio pause/resume
-                            if (isPaused) {
-                                viewModel.pauseSound()
-                            } else {
-                                viewModel.resumeSound()
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(64.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = if (isPaused) "Resume" else "Pause",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    // Stop Button
-                    FloatingActionButton(
+                    OutlinedButton(
                         onClick = {
                             isRunning = false
                             isPaused = false
                             timeRemaining = selectedDuration * 60
                             totalTime = selectedDuration * 60
-                            // Stop audio
+                            lastBellTime = 0
                             viewModel.stopSound()
                         },
-                        containerColor = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(56.dp)
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Stop,
-                            contentDescription = "Stop",
-                            modifier = Modifier.size(28.dp)
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
-                    }
-                }
-            } else {
-                // Not running state - show large centered start button
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    FloatingActionButton(
-                        onClick = {
-                            isRunning = true
-                            isPaused = false
-                            totalTime = selectedDuration * 60
-                            timeRemaining = selectedDuration * 60
-                            lastBellTime = 0 // Reset bell counter
-                            // Resume audio if there was a selected sound
-                            if (audioState.currentSound != null) {
-                                viewModel.resumeSound()
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(80.dp) // Made it bigger and more prominent
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Start Meditation",
-                            modifier = Modifier.size(40.dp)
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Stop Meditation")
                     }
                 }
             }
@@ -454,6 +468,17 @@ fun MeditateScreen() {
             },
             onDismiss = { showSoundPicker = false }
         )
+
+        // Duration Picker Dialog
+        DurationPickerDialog(
+            isVisible = showDurationPicker,
+            currentDuration = selectedDuration,
+            onDurationSelected = { duration ->
+                selectedDuration = duration
+                showDurationPicker = false
+            },
+            onDismiss = { showDurationPicker = false }
+        )
     }
 }
 
@@ -462,7 +487,10 @@ fun MeditationTimerCircle(
     progress: Float,
     timeRemaining: Int,
     isRunning: Boolean,
+    isPaused: Boolean,
     breathingScale: Float,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -470,7 +498,14 @@ fun MeditationTimerCircle(
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
     Box(
-        modifier = modifier.size(280.dp),
+        modifier = modifier
+            .size(280.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onTap() },
+                    onLongPress = { onLongPress() }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(
@@ -551,9 +586,20 @@ fun MeditationTimerCircle(
 
             if (isRunning) {
                 Text(
-                    text = "Breathe",
+                    text = if (isPaused) "Paused" else "Breathe",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = primaryColor.copy(alpha = 0.8f),
+                    color = if (isPaused) {
+                        onSurfaceColor.copy(alpha = 0.6f)
+                    } else {
+                        primaryColor.copy(alpha = 0.8f)
+                    },
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "Tap to start",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = primaryColor.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -583,6 +629,119 @@ fun DurationChip(
             selectedLabelColor = MaterialTheme.colorScheme.onPrimary
         )
     )
+}
+
+@Composable
+fun DurationPickerDialog(
+    isVisible: Boolean,
+    currentDuration: Int,
+    onDurationSelected: (Int) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (!isVisible) return
+
+    var sliderValue by remember { mutableFloatStateOf(currentDuration.toFloat()) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Choose Duration",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Elegant Duration Display
+                Text(
+                    text = "${sliderValue.toInt()}",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Light,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = if (sliderValue.toInt() == 1) "minute" else "minutes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Beautiful Slider
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { sliderValue = it },
+                        valueRange = 1f..60f,
+                        steps = 58, // 59 total values (1-60)
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "1 min",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "60 min",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = {
+                            onDurationSelected(sliderValue.toInt())
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Start")
+                    }
+                }
+            }
+        }
+    }
 }
 
 fun formatTime(seconds: Int): String {

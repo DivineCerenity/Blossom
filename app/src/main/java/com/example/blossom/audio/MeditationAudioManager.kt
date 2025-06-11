@@ -25,7 +25,8 @@ import javax.inject.Singleton
 
 data class AudioState(
     val isPlaying: Boolean = false,
-    val currentSound: MeditationSound? = null,
+    val currentSound: MeditationSound? = null, // Keep for backward compatibility
+    val activeSounds: List<MeditationSound> = emptyList(), // Multiple active sounds
     val volume: Float = 0.7f,
     val isMuted: Boolean = false,
     val intervalBellsEnabled: Boolean = false,
@@ -36,9 +37,15 @@ data class AudioState(
 class MeditationAudioManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private var mediaPlayer: MediaPlayer? = null
+    private var mediaPlayer: MediaPlayer? = null // Keep for backward compatibility
     private var fadeJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    // Track multiple background sounds
+    private val activeBackgroundPlayers = mutableMapOf<String, MediaPlayer>()
+
+    // Track active bell sounds to stop them when needed
+    private val activeBellPlayers = mutableListOf<MediaPlayer>()
 
     private val _audioState = MutableStateFlow(AudioState())
     val audioState: StateFlow<AudioState> = _audioState.asStateFlow()
@@ -47,59 +54,84 @@ class MeditationAudioManager @Inject constructor(
     val isLoading: State<Boolean> = _isLoading
     
     /**
-     * 🎵 Play a meditation sound
+     * 🎵 Play a meditation sound (supports multiple sounds)
      */
     fun playSound(sound: MeditationSound) {
         try {
             _isLoading.value = true
-            
-            // Stop current sound if playing
-            stopSound()
-            
+
+            // Check if this sound is already playing
+            if (activeBackgroundPlayers.containsKey(sound.id)) {
+                Log.d("MeditationAudio", "Sound ${sound.name} is already playing")
+                _isLoading.value = false
+                return
+            }
+
             // Get resource ID from assets or raw folder
             val resourceId = getResourceId(sound.fileName)
 
             Log.d("MeditationAudio", "Attempting to play: ${sound.name} (${sound.fileName}), resourceId: $resourceId")
 
             if (resourceId != 0) {
-                mediaPlayer = MediaPlayer.create(context, resourceId)?.apply {
+                val newPlayer = MediaPlayer.create(context, resourceId)?.apply {
                     isLooping = sound.isLooping
                     setVolume(_audioState.value.volume, _audioState.value.volume)
-                    
+
                     setOnPreparedListener {
                         start()
+
+                        // Add to active players
+                        activeBackgroundPlayers[sound.id] = this
+
+                        // Update state
+                        val currentActiveSounds = _audioState.value.activeSounds.toMutableList()
+                        currentActiveSounds.add(sound)
+
                         _audioState.value = _audioState.value.copy(
                             isPlaying = true,
-                            currentSound = sound
+                            currentSound = sound, // Keep for backward compatibility
+                            activeSounds = currentActiveSounds
                         )
                         _isLoading.value = false
 
                         // Start with fade in effect
-                        fadeIn()
+                        fadeInPlayer(this)
 
-                        Log.d("MeditationAudio", "Started playing: ${sound.name}")
+                        Log.d("MeditationAudio", "Started playing: ${sound.name}. Total active sounds: ${currentActiveSounds.size}")
                     }
-                    
+
                     setOnErrorListener { _, what, extra ->
                         Log.e("MeditationAudio", "MediaPlayer error: what=$what, extra=$extra")
                         _isLoading.value = false
                         false
                     }
-                    
+
                     setOnCompletionListener {
                         if (!sound.isLooping) {
+                            // Remove from active players
+                            activeBackgroundPlayers.remove(sound.id)
+
+                            val currentActiveSounds = _audioState.value.activeSounds.toMutableList()
+                            currentActiveSounds.removeAll { it.id == sound.id }
+
                             _audioState.value = _audioState.value.copy(
-                                isPlaying = false,
-                                currentSound = null
+                                isPlaying = currentActiveSounds.isNotEmpty(),
+                                activeSounds = currentActiveSounds
                             )
                         }
                     }
                 }
+
+                // Keep backward compatibility
+                if (mediaPlayer == null) {
+                    mediaPlayer = newPlayer
+                }
+
             } else {
                 Log.w("MeditationAudio", "Sound file not found: ${sound.fileName}")
                 _isLoading.value = false
             }
-            
+
         } catch (e: Exception) {
             Log.e("MeditationAudio", "Error playing sound: ${sound.name}", e)
             _isLoading.value = false
@@ -107,13 +139,34 @@ class MeditationAudioManager @Inject constructor(
     }
     
     /**
-     * 🛑 Stop current sound with fade out
+     * 🛑 Stop ALL sounds with fade out (background + any bells)
      */
     fun stopSound() {
         try {
+            // Stop all background sounds
+            activeBackgroundPlayers.values.forEach { player ->
+                try {
+                    if (player.isPlaying) {
+                        fadeOutPlayer(player) {
+                            try {
+                                player.stop()
+                                player.release()
+                            } catch (e: Exception) {
+                                Log.e("MeditationAudio", "Error stopping background player", e)
+                            }
+                        }
+                    } else {
+                        player.release()
+                    }
+                } catch (e: Exception) {
+                    Log.e("MeditationAudio", "Error stopping background player", e)
+                }
+            }
+            activeBackgroundPlayers.clear()
+
+            // Stop main background sound (backward compatibility)
             if (mediaPlayer?.isPlaying == true) {
                 fadeOut(1000) {
-                    // After fade out completes, actually stop the player
                     try {
                         mediaPlayer?.apply {
                             if (isPlaying) {
@@ -131,12 +184,26 @@ class MeditationAudioManager @Inject constructor(
                 mediaPlayer = null
             }
 
+            // Stop all active bell sounds immediately
+            activeBellPlayers.forEach { bellPlayer ->
+                try {
+                    if (bellPlayer.isPlaying) {
+                        bellPlayer.stop()
+                    }
+                    bellPlayer.release()
+                } catch (e: Exception) {
+                    Log.e("MeditationAudio", "Error stopping bell player", e)
+                }
+            }
+            activeBellPlayers.clear()
+
             _audioState.value = _audioState.value.copy(
                 isPlaying = false,
-                currentSound = null
+                currentSound = null,
+                activeSounds = emptyList()
             )
 
-            Log.d("MeditationAudio", "Stopped sound with fade out")
+            Log.d("MeditationAudio", "Stopped ALL sounds (background + bells) with fade out")
         } catch (e: Exception) {
             Log.e("MeditationAudio", "Error stopping sound", e)
         }
@@ -241,10 +308,37 @@ class MeditationAudioManager @Inject constructor(
                 val bellPlayer = MediaPlayer.create(context, bellResourceId)
                 bellPlayer?.apply {
                     setVolume(0.8f, 0.8f)
-                    setOnCompletionListener { release() }
+                    setOnCompletionListener {
+                        activeBellPlayers.remove(this)
+                        release()
+                    }
+
+                    // Add to active bell players list
+                    activeBellPlayers.add(this)
                     start()
+
+                    // Add beautiful fade out effect after 5 seconds
+                    coroutineScope.launch {
+                        delay(5000) // Let bell ring for 5 seconds
+
+                        // Fade out over 1 second
+                        val fadeSteps = 20
+                        val fadeDelay = 50L // 50ms per step = 1 second total
+                        val volumeStep = 0.8f / fadeSteps
+
+                        for (i in 1..fadeSteps) {
+                            if (isPlaying) {
+                                val newVolume = 0.8f - (volumeStep * i)
+                                setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
+                                delay(fadeDelay)
+                            }
+                        }
+
+                        // Remove from active list after fade
+                        activeBellPlayers.remove(this@apply)
+                    }
                 }
-                Log.i("MeditationAudio", "🔔 PLAYED MEDITATION BELL SOUND! 🔔")
+                Log.i("MeditationAudio", "🔔 PLAYED MEDITATION BELL SOUND WITH FADE! 🔔")
             } else {
                 // Fallback - just log the bell (this should show up!)
                 Log.i("MeditationAudio", "🔔🔔🔔 INTERVAL BELL! (No bell sound file found) 🔔🔔🔔")
@@ -256,7 +350,7 @@ class MeditationAudioManager @Inject constructor(
     }
     
     /**
-     * 🎵 Fade in effect - gradually increase volume
+     * 🎵 Fade in effect - gradually increase volume (for main player)
      */
     private fun fadeIn(durationMs: Long = 2000) {
         fadeJob?.cancel()
@@ -277,7 +371,34 @@ class MeditationAudioManager @Inject constructor(
     }
 
     /**
-     * 🎵 Fade out effect - gradually decrease volume
+     * 🎵 Fade in effect for specific player
+     */
+    private fun fadeInPlayer(player: MediaPlayer, durationMs: Long = 2000) {
+        coroutineScope.launch {
+            val targetVolume = _audioState.value.volume
+            val steps = 20
+            val stepDuration = durationMs / steps
+            val volumeStep = targetVolume / steps
+
+            player.setVolume(0f, 0f)
+
+            for (i in 1..steps) {
+                delay(stepDuration)
+                val currentVolume = volumeStep * i
+                try {
+                    if (player.isPlaying) {
+                        player.setVolume(currentVolume, currentVolume)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MeditationAudio", "Error in fade in", e)
+                    break
+                }
+            }
+        }
+    }
+
+    /**
+     * 🎵 Fade out effect - gradually decrease volume (for main player)
      */
     private fun fadeOut(durationMs: Long = 1500, onComplete: () -> Unit = {}) {
         fadeJob?.cancel()
@@ -291,6 +412,33 @@ class MeditationAudioManager @Inject constructor(
                 delay(stepDuration)
                 val newVolume = currentVolume - (volumeStep * i)
                 mediaPlayer?.setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
+            }
+
+            onComplete()
+        }
+    }
+
+    /**
+     * 🎵 Fade out effect for specific player
+     */
+    private fun fadeOutPlayer(player: MediaPlayer, durationMs: Long = 1500, onComplete: () -> Unit = {}) {
+        coroutineScope.launch {
+            val currentVolume = _audioState.value.volume
+            val steps = 15
+            val stepDuration = durationMs / steps
+            val volumeStep = currentVolume / steps
+
+            for (i in 1..steps) {
+                delay(stepDuration)
+                val newVolume = currentVolume - (volumeStep * i)
+                try {
+                    if (player.isPlaying) {
+                        player.setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
+                    }
+                } catch (e: Exception) {
+                    Log.e("MeditationAudio", "Error in fade out", e)
+                    break
+                }
             }
 
             onComplete()

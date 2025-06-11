@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -182,8 +183,11 @@ fun JournalListScreen(
                     showEntryDetail = false
                     selectedEntry = null
                 },
-                onImageClick = { imageUrl ->
-                    fullscreenImageUrl = imageUrl
+                onImageClick = { imageUrls, startIndex ->
+                    // Use the proper full-screen viewer with swipe navigation
+                    galleryImages = imageUrls
+                    galleryStartIndex = startIndex
+                    showImageGallery = true
                     showEntryDetail = false
                 }
             )
@@ -692,7 +696,7 @@ fun SeasonalDecorations(modifier: Modifier = Modifier) {
 fun JournalEntryDetailDialog(
     entry: JournalEntry,
     onDismiss: () -> Unit,
-    onImageClick: (String) -> Unit
+    onImageClick: (List<String>, Int) -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -759,11 +763,11 @@ fun JournalEntryDetailDialog(
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(imageUrls) { imageUrl ->
+                        itemsIndexed(imageUrls) { index, imageUrl ->
                             Card(
                                 modifier = Modifier
                                     .size(100.dp)
-                                    .clickable { onImageClick(imageUrl) },
+                                    .clickable { onImageClick(imageUrls, index) },
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                             ) {
                                 Image(
