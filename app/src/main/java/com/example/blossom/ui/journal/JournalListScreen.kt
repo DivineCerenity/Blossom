@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.blossom.ui.components.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -234,17 +237,18 @@ fun JournalListScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
+                        .padding(padding),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (entries.isNotEmpty()) {
                         item {
                             HintCard(text = "Swipe left to edit, swipe right to delete.")
                         }
                     }
-                    items(
+                    itemsIndexed(
                         items = entries,
-                        key = { it.id }
-                    ) { entry ->
+                        key = { _, entry -> entry.id }
+                    ) { index, entry ->
                         // This state is correctly defined inside the 'items' scope,
                         // ensuring each item has its own dismiss state.
                         val dismissState = rememberSwipeToDismissBoxState(
@@ -270,6 +274,34 @@ fun JournalListScreen(
 
                         // We use an AnimatedVisibility to remove the item from UI
                         // smoothly when its deletion is initiated.
+                        // Entry animation state
+                        var isVisible by remember { mutableStateOf(false) }
+                        val animationDelay = (index + 1) * 80
+
+                        val slideOffset by animateIntAsState(
+                            targetValue = if (isVisible) 0 else 100,
+                            animationSpec = tween(
+                                durationMillis = 600,
+                                delayMillis = animationDelay,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "slide_animation"
+                        )
+
+                        val alpha by animateFloatAsState(
+                            targetValue = if (isVisible) 1f else 0f,
+                            animationSpec = tween(
+                                durationMillis = 600,
+                                delayMillis = animationDelay,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "alpha_animation"
+                        )
+
+                        LaunchedEffect(Unit) {
+                            isVisible = true
+                        }
+
                         AnimatedVisibility(
                             visible = entryToDelete?.id != entry.id,
                             enter = fadeIn(),
@@ -277,6 +309,11 @@ fun JournalListScreen(
                         ) {
                             SwipeToDismissBox(
                                 state = dismissState,
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        translationY = slideOffset.toFloat()
+                                        this.alpha = alpha
+                                    },
                                 backgroundContent = {
                                     val direction = dismissState.targetValue
                                     val color by animateColorAsState(

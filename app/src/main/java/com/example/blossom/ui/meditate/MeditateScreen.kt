@@ -47,6 +47,7 @@ import kotlin.math.sin
 import kotlin.math.atan2
 import kotlin.math.sqrt
 import kotlin.math.PI
+import com.example.blossom.ui.components.*
 
 @Composable
 fun MeditateScreen() {
@@ -134,6 +135,16 @@ fun MeditateScreen() {
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Beautiful floating particles background
+        FloatingParticles(
+            modifier = Modifier.fillMaxSize(),
+            particleCount = 15,
+            colors = listOf(
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
+            )
+        )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),

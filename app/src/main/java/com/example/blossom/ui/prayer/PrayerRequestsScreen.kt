@@ -5,6 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.blossom.ui.components.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -239,14 +243,14 @@ fun PrayerRequestsScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                                        if (sortedPrayerRequests.isNotEmpty()) {
+                    if (sortedPrayerRequests.isNotEmpty()) {
                         item {
                             HintCard(text = "Swipe left to edit, swipe right to delete. Long press to toggle answered.")
                         }
                     }
-                    items(sortedPrayerRequests, key = { it.id }) { prayerRequest ->
+                    itemsIndexed(sortedPrayerRequests, key = { _, prayer -> prayer.id }) { index, prayerRequest ->
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value: SwipeToDismissBoxValue ->
                                 when (value) {
@@ -263,8 +267,41 @@ fun PrayerRequestsScreen(
                                 }
                             }
                         )
+                        // Entry animation state
+                        var isVisible by remember { mutableStateOf(false) }
+                        val animationDelay = (index + 1) * 80
+
+                        val slideOffset by animateIntAsState(
+                            targetValue = if (isVisible) 0 else 100,
+                            animationSpec = tween(
+                                durationMillis = 600,
+                                delayMillis = animationDelay,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "slide_animation"
+                        )
+
+                        val alpha by animateFloatAsState(
+                            targetValue = if (isVisible) 1f else 0f,
+                            animationSpec = tween(
+                                durationMillis = 600,
+                                delayMillis = animationDelay,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = "alpha_animation"
+                        )
+
+                        LaunchedEffect(Unit) {
+                            isVisible = true
+                        }
+
                         SwipeToDismissBox(
                             state = dismissState,
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    translationY = slideOffset.toFloat()
+                                    this.alpha = alpha
+                                },
                                                         backgroundContent = {
                                 val direction = dismissState.dismissDirection
                                 val color by animateColorAsState(
@@ -303,7 +340,6 @@ fun PrayerRequestsScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier,
                             content = {
                                 PrayerRequestCard(
                                     prayerRequest = prayerRequest,
@@ -411,16 +447,20 @@ fun PrayerRequestCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (prayerRequest.isAnswered) {
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        // Beautiful theme-based gradient background
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = getPrayerGradient(prayerRequest.priority, prayerRequest.isAnswered)
+                )
         ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -478,6 +518,7 @@ fun PrayerRequestCard(
                 )
             }
         }
+        }
     }
 }
 
@@ -488,6 +529,57 @@ fun getPriorityColor(priority: PrayerPriority): Color {
         PrayerPriority.MEDIUM -> com.example.blossom.ui.theme.PriorityMedium  // Warm amber
         PrayerPriority.HIGH -> com.example.blossom.ui.theme.PriorityHigh     // Soft red
         PrayerPriority.URGENT -> com.example.blossom.ui.theme.PriorityUrgent  // Deeper red
+    }
+}
+
+// Beautiful theme-reactive prayer gradients
+@Composable
+private fun getPrayerGradient(priority: PrayerPriority, isAnswered: Boolean): androidx.compose.ui.graphics.Brush {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val priorityColor = getPriorityColor(priority)
+
+    return if (isAnswered) {
+        // Special gradient for answered prayers - peaceful and celebratory
+        androidx.compose.ui.graphics.Brush.linearGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
+                primaryColor.copy(alpha = 0.08f),
+                surfaceColor.copy(alpha = 0.02f)
+            )
+        )
+    } else {
+        // Priority-based gradients that adapt to theme
+        when (priority) {
+            PrayerPriority.URGENT -> androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    primaryColor.copy(alpha = 0.18f),
+                    priorityColor.copy(alpha = 0.12f), // Deeper red accent
+                    surfaceColor.copy(alpha = 0.02f)
+                )
+            )
+            PrayerPriority.HIGH -> androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    primaryColor.copy(alpha = 0.15f),
+                    priorityColor.copy(alpha = 0.10f), // Soft red accent
+                    surfaceColor.copy(alpha = 0.02f)
+                )
+            )
+            PrayerPriority.MEDIUM -> androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    primaryColor.copy(alpha = 0.12f),
+                    priorityColor.copy(alpha = 0.08f), // Warm amber accent
+                    surfaceColor.copy(alpha = 0.02f)
+                )
+            )
+            PrayerPriority.LOW -> androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    primaryColor.copy(alpha = 0.10f),
+                    priorityColor.copy(alpha = 0.06f), // Sage green accent
+                    surfaceColor.copy(alpha = 0.02f)
+                )
+            )
+        }
     }
 }
 
