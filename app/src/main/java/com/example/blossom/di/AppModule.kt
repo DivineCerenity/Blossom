@@ -1,6 +1,7 @@
 package com.example.blossom.di
 
 import android.content.Context
+import com.example.blossom.audio.MeditationAudioManager
 import com.example.blossom.network.ApiService
 import com.example.blossom.ui.settings.SettingsRepository
 import com.squareup.moshi.Moshi
@@ -54,5 +55,12 @@ object AppModule {
     @Singleton
     fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
         return SettingsRepository(context)
+    }
+
+    // --- Audio Manager ---
+    @Provides
+    @Singleton
+    fun provideMeditationAudioManager(@ApplicationContext context: Context): MeditationAudioManager {
+        return MeditationAudioManager(context)
     }
 }

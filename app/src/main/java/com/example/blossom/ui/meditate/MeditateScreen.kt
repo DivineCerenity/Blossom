@@ -5,7 +5,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -13,6 +15,8 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,11 +42,17 @@ import kotlin.math.PI
 
 @Composable
 fun MeditateScreen() {
+    // Get ViewModel
+    val viewModel: MeditateViewModel = hiltViewModel()
     var selectedDuration by remember { mutableIntStateOf(5) } // minutes
     var isRunning by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
     var timeRemaining by remember { mutableIntStateOf(selectedDuration * 60) } // seconds
     var totalTime by remember { mutableIntStateOf(selectedDuration * 60) }
+    var showSoundPicker by remember { mutableStateOf(false) }
+
+    // Audio state
+    val audioState by viewModel.audioState.collectAsStateWithLifecycle()
 
     // Enhanced breathing animation - more noticeable
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
@@ -93,9 +103,15 @@ fun MeditateScreen() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(32.dp)
         ) {
+            // Add some top spacing
+            Spacer(modifier = Modifier.height(32.dp))
+
             // Beautiful Meditation Timer Circle
             MeditationTimerCircle(
                 progress = if (totalTime > 0) (totalTime - timeRemaining).toFloat() / totalTime else 0f,
@@ -104,7 +120,34 @@ fun MeditateScreen() {
                 breathingScale = if (isRunning && !isPaused) breathingScale else 1f
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Sound Control Button
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = { showSoundPicker = true },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (audioState.currentSound != null) Icons.Default.PlayArrow else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = audioState.currentSound?.name ?: "Choose Sound",
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Duration Selection (only when not running)
             if (!isRunning) {
@@ -150,14 +193,24 @@ fun MeditateScreen() {
             }
 
             // Control Buttons
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isRunning) {
+            if (isRunning) {
+                // Running state - show pause/resume and stop buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     // Pause/Resume Button
                     FloatingActionButton(
-                        onClick = { isPaused = !isPaused },
+                        onClick = {
+                            isPaused = !isPaused
+                            // Handle audio pause/resume
+                            if (isPaused) {
+                                viewModel.pauseSound()
+                            } else {
+                                viewModel.resumeSound()
+                            }
+                        },
                         containerColor = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(64.dp)
                     ) {
@@ -175,6 +228,8 @@ fun MeditateScreen() {
                             isPaused = false
                             timeRemaining = selectedDuration * 60
                             totalTime = selectedDuration * 60
+                            // Stop audio
+                            viewModel.stopSound()
                         },
                         containerColor = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(56.dp)
@@ -185,27 +240,54 @@ fun MeditateScreen() {
                             modifier = Modifier.size(28.dp)
                         )
                     }
-                } else {
-                    // Start Button
+                }
+            } else {
+                // Not running state - show large centered start button
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     FloatingActionButton(
                         onClick = {
                             isRunning = true
                             isPaused = false
                             totalTime = selectedDuration * 60
                             timeRemaining = selectedDuration * 60
+                            // Resume audio if there was a selected sound
+                            if (audioState.currentSound != null) {
+                                viewModel.resumeSound()
+                            }
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.size(80.dp) // Made it bigger and more prominent
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Start",
-                            modifier = Modifier.size(36.dp)
+                            contentDescription = "Start Meditation",
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
             }
+
+            // Add bottom spacing to ensure button is visible
+            Spacer(modifier = Modifier.height(32.dp))
         }
+
+        // Sound Picker Dialog
+        SoundPickerDialog(
+            isVisible = showSoundPicker,
+            currentSound = audioState.currentSound,
+            onSoundSelected = { sound ->
+                if (sound != null) {
+                    viewModel.playSound(sound)
+                } else {
+                    viewModel.stopSound()
+                }
+                showSoundPicker = false
+            },
+            onDismiss = { showSoundPicker = false }
+        )
     }
 }
 

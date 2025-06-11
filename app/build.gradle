@@ -109,6 +109,11 @@ dependencies {
     // Coil for image loading in Compose
     implementation "io.coil-kt:coil-compose:2.4.0"
 
+    // Audio & Media Support for Meditation Sounds
+    implementation "androidx.media3:media3-exoplayer:1.2.1"
+    implementation "androidx.media3:media3-ui:1.2.1"
+    implementation "androidx.media3:media3-common:1.2.1"
+
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
     testImplementation 'junit:junit:4.13.2'
