@@ -42,7 +42,19 @@ class MeditateViewModel @Inject constructor(
     fun toggleMute() {
         audioManager.toggleMute()
     }
-    
+
+    fun toggleIntervalBells() {
+        audioManager.toggleIntervalBells()
+    }
+
+    fun setIntervalMinutes(minutes: Int) {
+        audioManager.setIntervalMinutes(minutes)
+    }
+
+    fun playIntervalBell() {
+        audioManager.playIntervalBell()
+    }
+
     override fun onCleared() {
         super.onCleared()
         audioManager.release()

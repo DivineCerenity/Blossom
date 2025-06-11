@@ -50,6 +50,7 @@ fun MeditateScreen() {
     var timeRemaining by remember { mutableIntStateOf(selectedDuration * 60) } // seconds
     var totalTime by remember { mutableIntStateOf(selectedDuration * 60) }
     var showSoundPicker by remember { mutableStateOf(false) }
+    var lastBellTime by remember { mutableIntStateOf(0) }
 
     // Audio state
     val audioState by viewModel.audioState.collectAsStateWithLifecycle()
@@ -66,15 +67,38 @@ fun MeditateScreen() {
         label = "breathing_scale"
     )
 
-    // Timer logic
+    // Timer logic with interval bells
     LaunchedEffect(isRunning, isPaused) {
         if (isRunning && !isPaused) {
             while (timeRemaining > 0) {
                 delay(1000)
                 timeRemaining--
+
+                // Check for interval bells
+                if (audioState.intervalBellsEnabled) {
+                    val elapsedSeconds = totalTime - timeRemaining
+                    val intervalSeconds = audioState.intervalMinutes * 60
+
+                    // Debug logging
+                    if (elapsedSeconds % 10 == 0) { // Log every 10 seconds
+                        android.util.Log.d("MeditationTimer", "Elapsed: ${elapsedSeconds}s, Interval: ${intervalSeconds}s, Bells enabled: ${audioState.intervalBellsEnabled}")
+                    }
+
+                    // Ring bell at each interval (but not at the very start)
+                    if (elapsedSeconds > 0 && elapsedSeconds % intervalSeconds == 0) {
+                        val currentBellTime = elapsedSeconds / intervalSeconds
+                        android.util.Log.d("MeditationTimer", "Bell check: elapsed=$elapsedSeconds, interval=$intervalSeconds, currentBell=$currentBellTime, lastBell=$lastBellTime")
+                        if (currentBellTime != lastBellTime) {
+                            android.util.Log.i("MeditationTimer", "🔔 TRIGGERING INTERVAL BELL! 🔔")
+                            viewModel.playIntervalBell()
+                            lastBellTime = currentBellTime
+                        }
+                    }
+                }
             }
             if (timeRemaining == 0) {
                 isRunning = false
+                lastBellTime = 0 // Reset bell counter
                 // Timer completed!
             }
         }
@@ -147,7 +171,148 @@ fun MeditateScreen() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Volume Control (when sound is selected)
+            if (audioState.currentSound != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Volume",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "🔉",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Slider(
+                                value = audioState.volume,
+                                onValueChange = { volume ->
+                                    viewModel.setVolume(volume)
+                                },
+                                valueRange = 0f..1f,
+                                modifier = Modifier.weight(1f),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                )
+                            )
+
+                            Text(
+                                text = "🔊",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+
+                        Text(
+                            text = "${(audioState.volume * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // Interval Bells Settings (only when not running)
+            if (!isRunning) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "Interval Bells",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Switch(
+                                checked = audioState.intervalBellsEnabled,
+                                onCheckedChange = { viewModel.toggleIntervalBells() },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
+
+                        if (audioState.intervalBellsEnabled) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text(
+                                text = "Bell every ${audioState.intervalMinutes} minutes",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf(1, 3, 5, 10).forEach { minutes ->
+                                    FilterChip(
+                                        onClick = { viewModel.setIntervalMinutes(minutes) },
+                                        label = { Text("${minutes}m") },
+                                        selected = audioState.intervalMinutes == minutes,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
             // Duration Selection (only when not running)
             if (!isRunning) {
@@ -253,6 +418,7 @@ fun MeditateScreen() {
                             isPaused = false
                             totalTime = selectedDuration * 60
                             timeRemaining = selectedDuration * 60
+                            lastBellTime = 0 // Reset bell counter
                             // Resume audio if there was a selected sound
                             if (audioState.currentSound != null) {
                                 viewModel.resumeSound()

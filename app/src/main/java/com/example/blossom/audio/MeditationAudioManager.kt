@@ -7,9 +7,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import com.example.blossom.data.MeditationSound
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,7 +27,9 @@ data class AudioState(
     val isPlaying: Boolean = false,
     val currentSound: MeditationSound? = null,
     val volume: Float = 0.7f,
-    val isMuted: Boolean = false
+    val isMuted: Boolean = false,
+    val intervalBellsEnabled: Boolean = false,
+    val intervalMinutes: Int = 5
 )
 
 @Singleton
@@ -30,10 +37,12 @@ class MeditationAudioManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var mediaPlayer: MediaPlayer? = null
-    
+    private var fadeJob: Job? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
     private val _audioState = MutableStateFlow(AudioState())
     val audioState: StateFlow<AudioState> = _audioState.asStateFlow()
-    
+
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
     
@@ -64,6 +73,10 @@ class MeditationAudioManager @Inject constructor(
                             currentSound = sound
                         )
                         _isLoading.value = false
+
+                        // Start with fade in effect
+                        fadeIn()
+
                         Log.d("MeditationAudio", "Started playing: ${sound.name}")
                     }
                     
@@ -94,24 +107,36 @@ class MeditationAudioManager @Inject constructor(
     }
     
     /**
-     * 🛑 Stop current sound
+     * 🛑 Stop current sound with fade out
      */
     fun stopSound() {
         try {
-            mediaPlayer?.apply {
-                if (isPlaying) {
-                    stop()
+            if (mediaPlayer?.isPlaying == true) {
+                fadeOut(1000) {
+                    // After fade out completes, actually stop the player
+                    try {
+                        mediaPlayer?.apply {
+                            if (isPlaying) {
+                                stop()
+                            }
+                            release()
+                        }
+                        mediaPlayer = null
+                    } catch (e: Exception) {
+                        Log.e("MeditationAudio", "Error in fade out completion", e)
+                    }
                 }
-                release()
+            } else {
+                mediaPlayer?.release()
+                mediaPlayer = null
             }
-            mediaPlayer = null
-            
+
             _audioState.value = _audioState.value.copy(
                 isPlaying = false,
                 currentSound = null
             )
-            
-            Log.d("MeditationAudio", "Stopped sound")
+
+            Log.d("MeditationAudio", "Stopped sound with fade out")
         } catch (e: Exception) {
             Log.e("MeditationAudio", "Error stopping sound", e)
         }
@@ -169,17 +194,114 @@ class MeditationAudioManager @Inject constructor(
     fun toggleMute() {
         val newMutedState = !_audioState.value.isMuted
         val volume = if (newMutedState) 0f else _audioState.value.volume
-        
+
         mediaPlayer?.setVolume(volume, volume)
         _audioState.value = _audioState.value.copy(isMuted = newMutedState)
-        
+
         Log.d("MeditationAudio", "Toggled mute: $newMutedState")
     }
+
+    /**
+     * 🔔 Toggle interval bells
+     */
+    fun toggleIntervalBells() {
+        _audioState.value = _audioState.value.copy(
+            intervalBellsEnabled = !_audioState.value.intervalBellsEnabled
+        )
+        Log.d("MeditationAudio", "Interval bells: ${_audioState.value.intervalBellsEnabled}")
+    }
+
+    /**
+     * 🔔 Set interval minutes
+     */
+    fun setIntervalMinutes(minutes: Int) {
+        _audioState.value = _audioState.value.copy(intervalMinutes = minutes)
+        Log.d("MeditationAudio", "Interval set to: $minutes minutes")
+    }
+
+    /**
+     * 🔔 Play interval bell (called from timer)
+     */
+    fun playIntervalBell() {
+        Log.d("MeditationAudio", "playIntervalBell() called - enabled: ${_audioState.value.intervalBellsEnabled}")
+
+        if (!_audioState.value.intervalBellsEnabled) {
+            Log.d("MeditationAudio", "Interval bells disabled, skipping")
+            return
+        }
+
+        try {
+            // Try to play meditation bell sound
+            val bellResourceId = getResourceId("meditation_bell.wav")
+            Log.d("MeditationAudio", "Bell resource ID: $bellResourceId")
+
+            if (bellResourceId != 0) {
+                // Create a separate MediaPlayer for the bell sound
+                // This plays over the background sound
+                val bellPlayer = MediaPlayer.create(context, bellResourceId)
+                bellPlayer?.apply {
+                    setVolume(0.8f, 0.8f)
+                    setOnCompletionListener { release() }
+                    start()
+                }
+                Log.i("MeditationAudio", "🔔 PLAYED MEDITATION BELL SOUND! 🔔")
+            } else {
+                // Fallback - just log the bell (this should show up!)
+                Log.i("MeditationAudio", "🔔🔔🔔 INTERVAL BELL! (No bell sound file found) 🔔🔔🔔")
+            }
+        } catch (e: Exception) {
+            Log.e("MeditationAudio", "Error playing interval bell", e)
+            Log.i("MeditationAudio", "🔔🔔🔔 INTERVAL BELL! (Error playing sound) 🔔🔔🔔")
+        }
+    }
     
+    /**
+     * 🎵 Fade in effect - gradually increase volume
+     */
+    private fun fadeIn(durationMs: Long = 2000) {
+        fadeJob?.cancel()
+        fadeJob = coroutineScope.launch {
+            val targetVolume = _audioState.value.volume
+            val steps = 20
+            val stepDuration = durationMs / steps
+            val volumeStep = targetVolume / steps
+
+            mediaPlayer?.setVolume(0f, 0f)
+
+            for (i in 1..steps) {
+                delay(stepDuration)
+                val currentVolume = volumeStep * i
+                mediaPlayer?.setVolume(currentVolume, currentVolume)
+            }
+        }
+    }
+
+    /**
+     * 🎵 Fade out effect - gradually decrease volume
+     */
+    private fun fadeOut(durationMs: Long = 1500, onComplete: () -> Unit = {}) {
+        fadeJob?.cancel()
+        fadeJob = coroutineScope.launch {
+            val currentVolume = _audioState.value.volume
+            val steps = 15
+            val stepDuration = durationMs / steps
+            val volumeStep = currentVolume / steps
+
+            for (i in 1..steps) {
+                delay(stepDuration)
+                val newVolume = currentVolume - (volumeStep * i)
+                mediaPlayer?.setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
+            }
+
+            onComplete()
+        }
+    }
+
     /**
      * 🧹 Clean up resources
      */
     fun release() {
+        fadeJob?.cancel()
         stopSound()
     }
     
@@ -209,6 +331,9 @@ class MeditationAudioManager @Inject constructor(
             "pink_noise" -> context.resources.getIdentifier("pink_noise", "raw", context.packageName)
             "singing_bowls" -> context.resources.getIdentifier("singing_bowls", "raw", context.packageName)
             "cafe_ambience" -> context.resources.getIdentifier("cafe_ambience", "raw", context.packageName)
+
+            // 🔔 Bell sounds
+            "meditation_bell" -> context.resources.getIdentifier("meditation_bell", "raw", context.packageName)
 
             else -> {
                 Log.w("MeditationAudio", "Sound file not found: $fileName")
