@@ -29,6 +29,7 @@ fun ElegantImageManager(
     onAddImage: () -> Unit,
     onDeleteImage: (String) -> Unit,
     onSetFeaturedImage: (String) -> Unit = {},
+    onSaveToGallery: (String) -> Unit = {},
     onImageClick: (List<String>, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
@@ -260,6 +261,43 @@ fun ElegantImageManager(
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    // Save to Gallery option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable {
+                                onSaveToGallery(imageUrl)
+                                showImageOptions = null
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Download,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Save to Gallery",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Save this photo to your device gallery",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
                             }
                         }
                     }

@@ -33,7 +33,7 @@ import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
 import com.example.blossom.ui.journal.JournalViewModel
 import com.example.blossom.ui.checklist.ChecklistScreen
-import com.example.blossom.ui.meditation.MeditationScreen
+import com.example.blossom.ui.meditate.MeditateScreen
 import com.example.blossom.ui.prayer.PrayerRequestsScreen
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -151,7 +151,7 @@ fun BlossomApp() {
                 DashboardScreen()
             }
             composable(Screen.Meditate.route) {
-                MeditationScreen()
+                MeditateScreen()
             }
             composable(Screen.Checklist.route) {
                 ChecklistScreen()

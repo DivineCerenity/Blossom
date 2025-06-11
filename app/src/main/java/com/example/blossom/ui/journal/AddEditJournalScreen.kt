@@ -41,6 +41,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import coil.ImageLoader
+import coil.request.ImageRequest
+import android.content.ContentValues
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -65,10 +74,55 @@ fun AddEditJournalScreen(
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
     val cameraImageUriState = remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var showFullScreenViewer by remember { mutableStateOf(false) }
     var fullScreenImageIndex by remember { mutableIntStateOf(0) }
+
+    // Save to gallery function
+    fun saveImageToGallery(imageUrl: String) {
+        coroutineScope.launch {
+            try {
+                val imageLoader = ImageLoader(context)
+                val request = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .build()
+
+                val drawable = imageLoader.execute(request).drawable
+                if (drawable is android.graphics.drawable.BitmapDrawable) {
+                    val bitmap = drawable.bitmap
+
+                    withContext(Dispatchers.IO) {
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.Images.Media.DISPLAY_NAME, "Blossom_${System.currentTimeMillis()}.jpg")
+                            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Blossom")
+                        }
+
+                        val uri = context.contentResolver.insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+
+                        uri?.let { imageUri ->
+                            context.contentResolver.openOutputStream(imageUri)?.use { outputStream ->
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+                            }
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Photo saved to gallery! 📸", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to save photo", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
@@ -186,6 +240,9 @@ fun AddEditJournalScreen(
                 onAddImage = { showImageSourceDialog = true },
                 onDeleteImage = onDeleteImage,
                 onSetFeaturedImage = onSetFeaturedImage,
+                onSaveToGallery = { imageUrl ->
+                    saveImageToGallery(imageUrl)
+                },
                 onImageClick = { imageUrls, index ->
                     fullScreenImageIndex = index
                     showFullScreenViewer = true

@@ -47,6 +47,7 @@ fun PrayerRequestsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
 
     // Handle add prayer trigger from navigation
     LaunchedEffect(addPrayerTrigger) {
@@ -63,56 +64,92 @@ fun PrayerRequestsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        topBar = {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Search prayer requests...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                trailingIcon = {
+                    Box {
+                        IconButton(onClick = { sortMenuExpanded = true }) {
+                            Icon(
+                                imageVector = when (selectedSortOption) {
+                                    PrayerSortOption.PRIORITY_HIGH_FIRST -> Icons.Default.KeyboardArrowDown
+                                    PrayerSortOption.PRIORITY_LOW_FIRST -> Icons.Default.KeyboardArrowUp
+                                    PrayerSortOption.NEWEST_FIRST -> Icons.Default.ArrowDownward
+                                    PrayerSortOption.OLDEST_FIRST -> Icons.Default.ArrowUpward
+                                    PrayerSortOption.CATEGORY_A_TO_Z -> Icons.Default.SortByAlpha
+                                    PrayerSortOption.CATEGORY_Z_TO_A -> Icons.Default.SortByAlpha
+                                    PrayerSortOption.ANSWERED_FIRST -> Icons.Default.CheckCircle
+                                    PrayerSortOption.UNANSWERED_FIRST -> Icons.Default.RadioButtonUnchecked
+                                },
+                                contentDescription = "Sort"
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = sortMenuExpanded,
+                            onDismissRequest = { sortMenuExpanded = false }
+                        ) {
+                            PrayerSortOption.values().forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.label) },
+                                    onClick = {
+                                        selectedSortOption = option
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = when (option) {
+                                                PrayerSortOption.PRIORITY_HIGH_FIRST -> Icons.Default.KeyboardArrowDown
+                                                PrayerSortOption.PRIORITY_LOW_FIRST -> Icons.Default.KeyboardArrowUp
+                                                PrayerSortOption.NEWEST_FIRST -> Icons.Default.ArrowDownward
+                                                PrayerSortOption.OLDEST_FIRST -> Icons.Default.ArrowUpward
+                                                PrayerSortOption.CATEGORY_A_TO_Z -> Icons.Default.SortByAlpha
+                                                PrayerSortOption.CATEGORY_Z_TO_A -> Icons.Default.SortByAlpha
+                                                PrayerSortOption.ANSWERED_FIRST -> Icons.Default.CheckCircle
+                                                PrayerSortOption.UNANSWERED_FIRST -> Icons.Default.RadioButtonUnchecked
+                                            },
+                                            contentDescription = null
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                singleLine = true
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Stats Cards and Sort Dropdown
+            // Stats Cards
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                StatsCard(
+                    title = "Active",
+                    count = uiState.activePrayerCount,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
-                ) {
-                    StatsCard(
-                        title = "Active",
-                        count = uiState.activePrayerCount,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatsCard(
-                        title = "Answered",
-                        count = uiState.answeredPrayerCount,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Box {
-                    IconButton(onClick = { sortMenuExpanded = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
-                    }
-                    DropdownMenu(
-                        expanded = sortMenuExpanded,
-                        onDismissRequest = { sortMenuExpanded = false }
-                    ) {
-                        PrayerSortOption.values().forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option.label) },
-                                onClick = {
-                                    selectedSortOption = option
-                                    sortMenuExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
+                )
+                StatsCard(
+                    title = "Answered",
+                    count = uiState.answeredPrayerCount,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             // Tab Row
@@ -140,16 +177,23 @@ fun PrayerRequestsScreen(
                 1 -> uiState.answeredPrayerRequests
                 else -> uiState.allPrayerRequests
             }
-            // Sort logic
+            // Filter and sort logic
+            val filteredPrayerRequests = prayerRequests.filter { prayer ->
+                searchQuery.isEmpty() ||
+                prayer.title.contains(searchQuery, ignoreCase = true) ||
+                prayer.description.contains(searchQuery, ignoreCase = true) ||
+                prayer.category.displayName.contains(searchQuery, ignoreCase = true)
+            }
+
             val sortedPrayerRequests = when (selectedSortOption) {
-                PrayerSortOption.PRIORITY_HIGH_FIRST -> prayerRequests.sortedByDescending { it.priority }
-                PrayerSortOption.PRIORITY_LOW_FIRST -> prayerRequests.sortedBy { it.priority }
-                PrayerSortOption.NEWEST_FIRST -> prayerRequests.sortedByDescending { it.createdDate }
-                PrayerSortOption.OLDEST_FIRST -> prayerRequests.sortedBy { it.createdDate }
-                PrayerSortOption.CATEGORY_A_TO_Z -> prayerRequests.sortedBy { it.category.displayName }
-                PrayerSortOption.CATEGORY_Z_TO_A -> prayerRequests.sortedByDescending { it.category.displayName }
-                PrayerSortOption.ANSWERED_FIRST -> prayerRequests.sortedByDescending { it.isAnswered }
-                PrayerSortOption.UNANSWERED_FIRST -> prayerRequests.sortedBy { it.isAnswered }
+                PrayerSortOption.PRIORITY_HIGH_FIRST -> filteredPrayerRequests.sortedByDescending { it.priority }
+                PrayerSortOption.PRIORITY_LOW_FIRST -> filteredPrayerRequests.sortedBy { it.priority }
+                PrayerSortOption.NEWEST_FIRST -> filteredPrayerRequests.sortedByDescending { it.createdDate }
+                PrayerSortOption.OLDEST_FIRST -> filteredPrayerRequests.sortedBy { it.createdDate }
+                PrayerSortOption.CATEGORY_A_TO_Z -> filteredPrayerRequests.sortedBy { it.category.displayName }
+                PrayerSortOption.CATEGORY_Z_TO_A -> filteredPrayerRequests.sortedByDescending { it.category.displayName }
+                PrayerSortOption.ANSWERED_FIRST -> filteredPrayerRequests.sortedByDescending { it.isAnswered }
+                PrayerSortOption.UNANSWERED_FIRST -> filteredPrayerRequests.sortedBy { it.isAnswered }
             }
 
             if (sortedPrayerRequests.isEmpty()) {
@@ -168,20 +212,27 @@ fun PrayerRequestsScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = when (selectedTab) {
-                                0 -> "No active prayer requests"
-                                1 -> "No answered prayers yet"
-                                else -> "No prayer requests"
+                            text = if (searchQuery.isNotEmpty()) {
+                                "No prayers match your search"
+                            } else {
+                                when (selectedTab) {
+                                    0 -> "No active prayer requests"
+                                    1 -> "No answered prayers yet"
+                                    else -> "No prayer requests"
+                                }
                             },
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.outline
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap the + button to add your first prayer request",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        if (searchQuery.isEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tap the + button to add your first prayer request",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
                     }
                 }
             } else {

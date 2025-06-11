@@ -42,6 +42,18 @@ class JournalListViewModel @Inject constructor(
                         compareByDescending<JournalEntry> { it.mood == "Happy" }
                             .thenByDescending { it.creationTimestamp }
                     )
+                    SortOption.GRATEFUL_FIRST -> filteredEntries.sortedWith(
+                        compareByDescending<JournalEntry> { it.mood == "Grateful" }
+                            .thenByDescending { it.creationTimestamp }
+                    )
+                    SortOption.EXCITED_FIRST -> filteredEntries.sortedWith(
+                        compareByDescending<JournalEntry> { it.mood == "Excited" }
+                            .thenByDescending { it.creationTimestamp }
+                    )
+                    SortOption.NEUTRAL_FIRST -> filteredEntries.sortedWith(
+                        compareByDescending<JournalEntry> { it.mood == "Neutral" }
+                            .thenByDescending { it.creationTimestamp }
+                    )
                     SortOption.SAD_FIRST -> filteredEntries.sortedWith(
                         compareByDescending<JournalEntry> { it.mood == "Sad" }
                             .thenByDescending { it.creationTimestamp }

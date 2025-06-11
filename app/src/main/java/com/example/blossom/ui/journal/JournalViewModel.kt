@@ -35,12 +35,16 @@ class JournalViewModel @Inject constructor(
 
     fun updateJournalEntry(id: Int, title: String, content: String, mood: String, imageUrl: String?) {
         viewModelScope.launch {
+            // Preserve original creation timestamp
+            val existingEntry = journalDao.getEntryById(id)
+            val originalTimestamp = existingEntry?.creationTimestamp ?: System.currentTimeMillis()
+
             val updatedJournalEntry = JournalEntry(
                 id = id,
                 title = title,
                 content = content,
                 mood = mood,
-                creationTimestamp = System.currentTimeMillis(),
+                creationTimestamp = originalTimestamp,
                 imageUrl = imageUrl
             )
             journalDao.insertJournalEntry(updatedJournalEntry) // Assuming insert is also used for updates
@@ -90,7 +94,15 @@ class JournalViewModel @Inject constructor(
             _uiState.value.featuredImageUrl
         }
 
+        // Also update legacy imageUrl field for backward compatibility
+        val newImageUrl = if (_uiState.value.imageUrl == imageUri) {
+            currentImages.firstOrNull() // Set first remaining image, or null if none
+        } else {
+            _uiState.value.imageUrl
+        }
+
         _uiState.value = _uiState.value.copy(
+            imageUrl = newImageUrl,
             imageUrls = currentImages,
             featuredImageUrl = newFeaturedImage
         )
@@ -105,12 +117,22 @@ class JournalViewModel @Inject constructor(
             val currentState = _uiState.value
             val imageUrlsString = currentState.imageUrls.joinToString("|")
 
+            // Preserve original creation timestamp for existing entries
+            val timestamp = if (currentState.id == 0) {
+                // New entry - use current time
+                System.currentTimeMillis()
+            } else {
+                // Editing existing entry - get original timestamp
+                val existingEntry = journalDao.getEntryById(currentState.id)
+                existingEntry?.creationTimestamp ?: System.currentTimeMillis()
+            }
+
             val journalEntry = JournalEntry(
                 id = currentState.id,
                 title = currentState.title,
                 content = currentState.content,
                 mood = currentState.mood,
-                creationTimestamp = System.currentTimeMillis(),
+                creationTimestamp = timestamp,
                 imageUrl = currentState.imageUrl, // Keep for backward compatibility
                 imageUrls = imageUrlsString,
                 featuredImageUrl = currentState.featuredImageUrl
