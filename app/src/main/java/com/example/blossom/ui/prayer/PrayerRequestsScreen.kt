@@ -1,7 +1,9 @@
 package com.example.blossom.ui.prayer
 
+import androidx.compose.animation.*
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blossom.data.PrayerCategory
 import com.example.blossom.data.PrayerPriority
@@ -42,6 +45,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.blossom.ui.dashboard.DashboardViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -50,6 +55,8 @@ fun PrayerRequestsScreen(
     addPrayerTrigger: Boolean = false,
     onAddPrayerTriggered: () -> Unit = {}
 ) {
+    // 📖 DAILY VERSE INTEGRATION
+    val dashboardViewModel: DashboardViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
@@ -141,6 +148,12 @@ fun PrayerRequestsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // 📖 DAILY VERSE CARD (MOVED FROM HOME!)
+            DailyVerseCard(
+                dashboardViewModel = dashboardViewModel,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
             // Stats Cards
             Row(
                 modifier = Modifier
@@ -676,4 +689,114 @@ fun AddPrayerRequestDialog(
             }
         }
     )
+}
+
+/**
+ * 📖 DAILY VERSE CARD
+ * Beautiful collapsible daily verse integration in Prayer section
+ */
+@Composable
+fun DailyVerseCard(
+    dashboardViewModel: DashboardViewModel,
+    modifier: Modifier = Modifier
+) {
+    val uiState by dashboardViewModel.uiState.collectAsState()
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        tonalElevation = 4.dp
+    ) {
+        AnimatedContent(
+            targetState = isExpanded,
+            transitionSpec = {
+                slideInVertically() + fadeIn() togetherWith slideOutVertically() + fadeOut()
+            },
+            label = "verse_expansion"
+        ) { expanded ->
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Header row (always visible)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "📖",
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = if (expanded) "Verse of the Day" else uiState.verseReference,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Compact preview or full verse
+                when {
+                    uiState.isLoading -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Loading verse...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                    uiState.error != null -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Unable to load verse",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    expanded -> {
+                        // Full verse when expanded
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "\"${uiState.verseText}\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            lineHeight = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.verseReference,
+                            modifier = Modifier.align(Alignment.End),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    else -> {
+                        // Compact preview when collapsed
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "\"${uiState.verseText.take(50)}${if (uiState.verseText.length > 50) "..." else ""}\"",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

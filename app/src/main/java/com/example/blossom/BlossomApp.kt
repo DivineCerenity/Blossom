@@ -35,6 +35,7 @@ import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
 import com.example.blossom.ui.journal.JournalViewModel
 import com.example.blossom.ui.checklist.ChecklistScreen
+import com.example.blossom.ui.insights.InsightsScreen
 import com.example.blossom.ui.meditate.MeditateScreen
 import com.example.blossom.ui.prayer.PrayerRequestsScreen
 import androidx.compose.ui.text.TextStyle
@@ -155,15 +156,18 @@ fun BlossomApp(
                 }
             }
     ) { innerPadding ->
-        NavHost(navController, startDestination = Screen.Home.route, Modifier.padding(innerPadding)) {
+        NavHost(navController, startDestination = Screen.Insights.route, Modifier.padding(innerPadding)) {
             composable(Screen.Home.route) {
-                DashboardScreen()
+                DashboardScreen()  // Keep for settings navigation
             }
             composable(Screen.Meditate.route) {
                 MeditateScreen()
             }
             composable(Screen.Checklist.route) {
                 ChecklistScreen()
+            }
+            composable(Screen.Insights.route) {
+                InsightsScreen()  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
             }
             composable(Screen.Prayers.route) {
                 PrayerRequestsScreen(

@@ -12,9 +12,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PrayerRequest::class,
         JournalTag::class,
         JournalEntryTagCrossRef::class,
-        DailyVerse::class
+        DailyVerse::class,
+        MeditationSession::class,  // 📊 NEW ANALYTICS ENTITIES
+        DailyAnalytics::class,
+        Achievement::class
     ],
-    version = 8,
+    version = 9,  // 📊 INCREMENTED VERSION FOR NEW ANALYTICS
     exportSchema = false
 )
 abstract class BlossomDatabase : RoomDatabase() {
@@ -23,6 +26,7 @@ abstract class BlossomDatabase : RoomDatabase() {
     abstract fun prayerRequestDao(): PrayerRequestDao
     abstract fun journalTagDao(): JournalTagDao
     abstract fun dailyVerseDao(): DailyVerseDao
+    abstract fun analyticsDao(): AnalyticsDao  // 📊 NEW ANALYTICS DAO
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -99,11 +103,59 @@ abstract class BlossomDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("""
                     CREATE TABLE IF NOT EXISTS `daily_verses` (
-                        `date` TEXT NOT NULL, 
-                        `verse` TEXT NOT NULL, 
-                        `reference` TEXT NOT NULL, 
-                        `fetchedAt` INTEGER NOT NULL, 
+                        `date` TEXT NOT NULL,
+                        `verse` TEXT NOT NULL,
+                        `reference` TEXT NOT NULL,
+                        `fetchedAt` INTEGER NOT NULL,
                         PRIMARY KEY(`date`)
+                    )
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 📊 CREATE ANALYTICS TABLES
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `meditation_sessions` (
+                        `id` TEXT NOT NULL,
+                        `startTime` INTEGER NOT NULL,
+                        `endTime` INTEGER NOT NULL,
+                        `duration` INTEGER NOT NULL,
+                        `breathingPattern` TEXT NOT NULL,
+                        `binauralBeat` TEXT,
+                        `backgroundSound` TEXT,
+                        `theme` TEXT NOT NULL,
+                        `completed` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `daily_analytics` (
+                        `date` TEXT NOT NULL,
+                        `meditationTime` INTEGER NOT NULL,
+                        `meditationSessions` INTEGER NOT NULL,
+                        `journalEntries` INTEGER NOT NULL,
+                        `prayersAdded` INTEGER NOT NULL,
+                        `prayersAnswered` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`date`)
+                    )
+                """.trimIndent())
+
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `achievements` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `icon` TEXT NOT NULL,
+                        `unlockedAt` INTEGER,
+                        `category` TEXT NOT NULL,
+                        `threshold` INTEGER NOT NULL,
+                        `currentProgress` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
                     )
                 """.trimIndent())
             }

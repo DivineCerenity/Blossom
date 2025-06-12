@@ -2,6 +2,7 @@ package com.example.blossom.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.blossom.data.AnalyticsDao
 import com.example.blossom.data.BlossomDatabase
 import com.example.blossom.data.DailyHabitDao
 import com.example.blossom.data.DailyVerseDao
@@ -28,7 +29,7 @@ object DatabaseModule {
             "blossom_database"
         )
         .fallbackToDestructiveMigration() // Allow destructive migration for all version changes
-        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7, BlossomDatabase.MIGRATION_7_8) // Add migrations
+        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7, BlossomDatabase.MIGRATION_7_8, BlossomDatabase.MIGRATION_8_9) // Add migrations including analytics
         .build()
     }
 
@@ -60,5 +61,11 @@ object DatabaseModule {
     @Singleton
     fun provideDailyVerseDao(database: BlossomDatabase): DailyVerseDao {
         return database.dailyVerseDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAnalyticsDao(database: BlossomDatabase): AnalyticsDao {
+        return database.analyticsDao()  // 📊 NEW ANALYTICS DAO
     }
 }
