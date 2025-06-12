@@ -218,26 +218,28 @@ class BinauralBeatsManager @Inject constructor(
     /**
      * 🎵 Fade out and stop (for smooth transitions)
      */
-    fun fadeOutAndStop(durationMs: Long = 3000) {
+    fun fadeOutAndStop(durationMs: Long = 5000) {
         fadeJob?.cancel()
         fadeJob = scope.launch {
             val startBinauralVol = binauralVolume
             val startNatureVol = natureSoundVolume
-            val steps = 30
+            val steps = 50 // More steps for smoother fade
             val stepDelay = durationMs / steps
-            val binauralStep = startBinauralVol / steps
-            val natureStep = startNatureVol / steps
-            
+
             repeat(steps) { step ->
-                val newBinauralVol = startBinauralVol - (binauralStep * step)
-                val newNatureVol = startNatureVol - (natureStep * step)
-                
-                binauralPlayer?.setVolume(newBinauralVol, newBinauralVol)
-                natureSoundPlayer?.setVolume(newNatureVol, newNatureVol)
-                
+                // Use exponential fade curve for more natural sound
+                val progress = step.toFloat() / steps
+                val fadeMultiplier = (1f - progress) * (1f - progress) // Exponential curve
+
+                val newBinauralVol = startBinauralVol * fadeMultiplier
+                val newNatureVol = startNatureVol * fadeMultiplier
+
+                binauralPlayer?.setVolume(newBinauralVol.coerceAtLeast(0f), newBinauralVol.coerceAtLeast(0f))
+                natureSoundPlayer?.setVolume(newNatureVol.coerceAtLeast(0f), newNatureVol.coerceAtLeast(0f))
+
                 delay(stepDelay)
             }
-            
+
             stopBinauralBeats()
         }
     }

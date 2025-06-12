@@ -34,6 +34,11 @@ fun InsightsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
+
+    // 📊 REFRESH DATA WHEN SCREEN BECOMES VISIBLE
+    LaunchedEffect(Unit) {
+        viewModel.refreshData()
+    }
     
     LazyColumn(
         modifier = Modifier
@@ -273,7 +278,7 @@ fun QuickStatsRow(
         StatCard(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.Schedule,
-            value = formatTime(totalTime),
+            value = formatTotalTime(totalTime), // 🕐 ELEGANT H:M:S FORMAT
             label = "Total Time",
             color = MaterialTheme.colorScheme.secondary
         )
@@ -492,16 +497,34 @@ fun AchievementSection(achievements: List<Achievement>) {
 
 /**
  * ⏰ FORMAT TIME HELPER
- * Convert seconds to readable format
+ * Convert seconds to readable format with hours, minutes and seconds
  */
 fun formatTime(seconds: Int): String {
     val hours = seconds / 3600
     val minutes = (seconds % 3600) / 60
+    val remainingSeconds = seconds % 60
 
     return when {
         hours > 0 -> "${hours}h ${minutes}m"
+        minutes > 0 && remainingSeconds > 0 -> "${minutes}m ${remainingSeconds}s"
         minutes > 0 -> "${minutes}m"
-        else -> "${seconds}s"
+        else -> "${remainingSeconds}s"
+    }
+}
+
+/**
+ * ⏰ FORMAT TOTAL TIME FOR INSIGHTS
+ * Convert seconds to elegant Hours:Minutes:Seconds format for main stats
+ */
+fun formatTotalTime(seconds: Int): String {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val remainingSeconds = seconds % 60
+
+    return when {
+        hours > 0 -> String.format("%d:%02d:%02d", hours, minutes, remainingSeconds)
+        minutes > 0 -> String.format("%d:%02d", minutes, remainingSeconds)
+        else -> "0:${String.format("%02d", remainingSeconds)}"
     }
 }
 

@@ -375,15 +375,35 @@ class MeditationAudioManager @Inject constructor(
                         val volumeStep = 0.8f / fadeSteps
 
                         for (i in 1..fadeSteps) {
-                            if (isPlaying) {
-                                val newVolume = 0.8f - (volumeStep * i)
-                                setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
-                                delay(fadeDelay)
+                            try {
+                                if (isPlaying) {
+                                    val newVolume = 0.8f - (volumeStep * i)
+                                    setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
+                                    delay(fadeDelay)
+                                } else {
+                                    break // Stop fading if not playing
+                                }
+                            } catch (e: IllegalStateException) {
+                                Log.w("MeditationAudio", "Bell player in invalid state during fade, stopping fade")
+                                break
+                            } catch (e: Exception) {
+                                Log.e("MeditationAudio", "Error during bell fade", e)
+                                break
                             }
                         }
 
                         // Remove from active list after fade
-                        activeBellPlayers.remove(this@apply)
+                        try {
+                            activeBellPlayers.remove(this@apply)
+                            if (isPlaying) {
+                                stop()
+                            }
+                            release()
+                        } catch (e: IllegalStateException) {
+                            Log.w("MeditationAudio", "Bell player already released")
+                        } catch (e: Exception) {
+                            Log.e("MeditationAudio", "Error cleaning up bell player", e)
+                        }
                     }
                 }
                 Log.i("MeditationAudio", "🔔 PLAYED MEDITATION BELL SOUND WITH FADE! 🔔")

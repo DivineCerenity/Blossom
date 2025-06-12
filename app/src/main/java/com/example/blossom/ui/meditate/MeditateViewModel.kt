@@ -79,6 +79,10 @@ class MeditateViewModel @Inject constructor(
         binauralBeatsManager.stopBinauralBeats()
     }
 
+    fun fadeOutBinauralBeats() {
+        binauralBeatsManager.fadeOutAndStop(5000) // 5 second extra smooth fade
+    }
+
     fun setBinauralVolume(volume: Float) {
         binauralBeatsManager.setBinauralVolume(volume)
     }

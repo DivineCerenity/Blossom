@@ -59,11 +59,15 @@ import com.example.blossom.ui.components.MeditationSettings
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Air
+import com.example.blossom.ui.insights.InsightsViewModel
 
 @Composable
 fun MeditateScreen() {
-    // Get ViewModel
+    // Get ViewModels
     val viewModel: MeditateViewModel = hiltViewModel()
+    val insightsViewModel: InsightsViewModel = hiltViewModel() // 📊 ANALYTICS TRACKING
+    val settingsViewModel: com.example.blossom.ui.settings.SettingsViewModel = hiltViewModel() // 🎨 THEME TRACKING
+    val settingsUiState by settingsViewModel.uiState.collectAsState()
     var selectedDuration by remember { mutableIntStateOf(5) } // minutes
     var isRunning by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
@@ -77,18 +81,22 @@ fun MeditateScreen() {
     var showCompletion by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    // 📊 ANALYTICS TRACKING VARIABLES
+    var sessionStartTime by remember { mutableLongStateOf(0L) }
+    var sessionEndTime by remember { mutableLongStateOf(0L) }
+
     // Audio state
     val audioState by viewModel.audioState.collectAsStateWithLifecycle()
 
-    // Meditation settings state
+    // Meditation settings state - SYNC WITH AUDIO STATE
     var meditationSettings by remember {
         mutableStateOf(
             MeditationSettings(
                 duration = selectedDuration,
-                selectedSound = null,
-                volume = 0.7f,
-                intervalBellsEnabled = false,
-                intervalMinutes = 5,
+                selectedSound = audioState.currentSound,
+                volume = audioState.volume,
+                intervalBellsEnabled = audioState.intervalBellsEnabled,
+                intervalMinutes = audioState.intervalMinutes, // 🔧 USE ACTUAL AUDIO STATE!
                 breathingGuideEnabled = false,
                 breathingPattern = BreathingPatterns.BOX_BREATHING,
                 // 🧠 BINAURAL BEATS DEFAULTS
@@ -99,6 +107,13 @@ fun MeditateScreen() {
                 natureSoundVolume = 0.7f
             )
         )
+    }
+
+    // 🔄 SYNC INITIAL SETTINGS TO AUDIO MANAGER
+    LaunchedEffect(Unit) {
+        android.util.Log.d("MeditationTracking", "🔄 Syncing initial settings to audio manager")
+        viewModel.setIntervalMinutes(meditationSettings.intervalMinutes)
+        android.util.Log.d("MeditationTracking", "Initial interval set to: ${meditationSettings.intervalMinutes}m")
     }
 
     // Update settings when audio state changes
@@ -156,9 +171,29 @@ fun MeditateScreen() {
                 isRunning = false
                 lastBellTime = 0 // Reset bell counter
                 meditationPhase = MeditationPhase.COMPLETION
-                showCompletion = true
+
+                // 🎵 SMOOTH FADE OUT OF BINAURAL BEATS
+                viewModel.fadeOutBinauralBeats() // Smooth fade instead of hard stop
                 viewModel.stopSound() // Stop any playing sounds
-                viewModel.stopBinauralBeats() // Stop binaural beats
+
+                // 📊 RECORD COMPLETED MEDITATION SESSION
+                sessionEndTime = System.currentTimeMillis()
+                val actualDuration = (sessionEndTime - sessionStartTime) / 1000 // Convert to seconds
+
+                insightsViewModel.recordMeditationSession(
+                    startTime = sessionStartTime,
+                    endTime = sessionEndTime,
+                    duration = actualDuration.toInt(),
+                    breathingPattern = if (meditationSettings.breathingGuideEnabled)
+                        meditationSettings.breathingPattern?.name ?: "None" else "None",
+                    binauralBeat = meditationSettings.selectedBinauralBeat?.name,
+                    backgroundSound = meditationSettings.selectedSound?.name,
+                    theme = settingsUiState.selectedTheme.displayName, // 🎨 ACTUAL THEME NAME!
+                    completed = true
+                )
+
+                // 🎉 SHOW COMPLETION DIALOG INSTEAD OF OVERLAY
+                showCompletion = true
             }
         }
     }
@@ -259,6 +294,8 @@ fun MeditateScreen() {
                 timeRemaining = timeRemaining,
                 isTimerRunning = isRunning,
                 onTap = {
+                    android.util.Log.i("BLOSSOM_DEBUG", "🖱️ TAP DETECTED! isRunning: $isRunning, phase: $meditationPhase")
+
                     // Tap to play/pause
                     if (isRunning) {
                         isPaused = !isPaused
@@ -278,15 +315,69 @@ fun MeditateScreen() {
                     }
                 },
                 onLongPress = {
+                    android.util.Log.d("MeditationTracking", "🔥 LONG PRESS DETECTED! isRunning: $isRunning")
+                    android.util.Log.i("BLOSSOM_DEBUG", "🔥 LONG PRESS DETECTED! isRunning: $isRunning")
+
                     if (isRunning) {
                         // Long press to stop meditation
+                        android.util.Log.d("MeditationTracking", "=== MANUAL STOP TRIGGERED ===")
+                        android.util.Log.i("BLOSSOM_DEBUG", "=== MANUAL STOP TRIGGERED ===")
+                        android.util.Log.d("MeditationTracking", "isRunning: $isRunning")
+                        android.util.Log.d("MeditationTracking", "sessionStartTime: $sessionStartTime")
+
+                        // 📊 RECORD INCOMPLETE MEDITATION SESSION FIRST
+                        if (sessionStartTime > 0) {
+                            sessionEndTime = System.currentTimeMillis()
+                            val actualDuration = (sessionEndTime - sessionStartTime) / 1000 // Convert to seconds
+
+                            android.util.Log.d("MeditationTracking", "Session duration: ${actualDuration}s")
+                            android.util.Log.d("MeditationTracking", "Start time: $sessionStartTime")
+                            android.util.Log.d("MeditationTracking", "End time: $sessionEndTime")
+
+                            // Only record if session was at least 10 seconds
+                            if (actualDuration >= 10) {
+                                android.util.Log.d("MeditationTracking", "✅ Recording manual stop session: ${actualDuration}s")
+                                android.util.Log.i("BLOSSOM_DEBUG", "✅ Recording manual stop session: ${actualDuration}s")
+
+                                val breathingPattern = if (meditationSettings.breathingGuideEnabled)
+                                    meditationSettings.breathingPattern?.name ?: "None" else "None"
+                                val binauralBeat = meditationSettings.selectedBinauralBeat?.name
+                                val backgroundSound = meditationSettings.selectedSound?.name
+                                val theme = settingsUiState.selectedTheme.displayName
+
+                                android.util.Log.d("MeditationTracking", "Session details - Breathing: $breathingPattern, Binaural: $binauralBeat, Sound: $backgroundSound, Theme: $theme")
+
+                                insightsViewModel.recordMeditationSession(
+                                    startTime = sessionStartTime,
+                                    endTime = sessionEndTime,
+                                    duration = actualDuration.toInt(),
+                                    breathingPattern = breathingPattern,
+                                    binauralBeat = binauralBeat,
+                                    backgroundSound = backgroundSound,
+                                    theme = theme,
+                                    completed = false // Manually stopped
+                                )
+
+                                // 📊 REFRESH ANALYTICS IMMEDIATELY
+                                android.util.Log.d("MeditationTracking", "🔄 Refreshing analytics after manual stop")
+                                insightsViewModel.refreshData()
+                            } else {
+                                android.util.Log.w("MeditationTracking", "❌ Session too short to record: ${actualDuration}s (minimum 10s)")
+                            }
+                            sessionStartTime = 0L // Reset
+                            android.util.Log.d("MeditationTracking", "Session start time reset to 0")
+                        } else {
+                            android.util.Log.w("MeditationTracking", "❌ No session start time recorded - cannot track session")
+                        }
+
+                        // Now stop the meditation
                         isRunning = false
                         isPaused = false
                         timeRemaining = selectedDuration * 60
                         totalTime = selectedDuration * 60
                         lastBellTime = 0
                         viewModel.stopSound()
-                        viewModel.stopBinauralBeats() // Stop binaural beats
+                        viewModel.fadeOutBinauralBeats() // Smooth fade out
                         meditationPhase = MeditationPhase.PREPARATION
                     } else {
                         // Long press to open settings
@@ -320,6 +411,14 @@ fun MeditateScreen() {
                     isRunning = true
                     isPaused = false
 
+                    // 📊 RECORD SESSION START TIME
+                    sessionStartTime = System.currentTimeMillis()
+                    android.util.Log.d("MeditationTracking", "=== MEDITATION SESSION STARTED ===")
+                    android.util.Log.d("MeditationTracking", "Session start time: $sessionStartTime")
+                    android.util.Log.d("MeditationTracking", "Duration setting: ${meditationSettings.duration} minutes")
+                    android.util.Log.d("MeditationTracking", "Interval bells: ${meditationSettings.intervalBellsEnabled}, Interval: ${meditationSettings.intervalMinutes}m")
+                    android.util.Log.d("MeditationTracking", "Audio state - Bells: ${audioState.intervalBellsEnabled}, Interval: ${audioState.intervalMinutes}m")
+
                     // 🎵 START SOUNDS WHEN MEDITATION BEGINS
                     if (meditationSettings.selectedSound != null) {
                         viewModel.playSound(meditationSettings.selectedSound!!)
@@ -344,21 +443,24 @@ fun MeditateScreen() {
             )
         }
 
-        // 🎉 COMPLETION CELEBRATION OVERLAY
+        // 🎉 BEAUTIFUL COMPLETION DIALOG
         if (showCompletion) {
-            CompletionCelebration(
-                sessionDuration = selectedDuration,
+            MeditationCompletionDialog(
+                sessionDuration = (sessionEndTime - sessionStartTime) / 1000, // Actual duration in seconds
                 breathingPattern = if (meditationSettings.breathingGuideEnabled) meditationSettings.breathingPattern?.name ?: "" else "",
-                onCelebrationComplete = {
+                binauralBeat = meditationSettings.selectedBinauralBeat?.name,
+                backgroundSound = meditationSettings.selectedSound?.name,
+                onDismiss = {
                     showCompletion = false
                     meditationPhase = MeditationPhase.PREPARATION
                     // Reset for next session
                     timeRemaining = selectedDuration * 60
                     totalTime = selectedDuration * 60
-                    // Ensure binaural beats are stopped
-                    viewModel.stopBinauralBeats()
-                },
-                modifier = Modifier.fillMaxSize()
+                    sessionStartTime = 0L
+                    sessionEndTime = 0L
+                    // 📊 REFRESH ANALYTICS IMMEDIATELY
+                    insightsViewModel.refreshData()
+                }
             )
         }
 
@@ -368,14 +470,20 @@ fun MeditateScreen() {
             currentSettings = meditationSettings,
             availableSounds = com.example.blossom.data.MeditationSounds.allSounds,
             onSettingsChanged = { newSettings ->
+                android.util.Log.d("MeditationTracking", "🔧 Settings changed - Interval: ${newSettings.intervalMinutes}m, Bells: ${newSettings.intervalBellsEnabled}")
+
                 meditationSettings = newSettings
                 // DON'T auto-play sounds when settings change
                 // Sounds will only play when meditation starts
                 viewModel.setVolume(newSettings.volume)
-                if (newSettings.intervalBellsEnabled) {
+
+                // 🔔 ALWAYS SET INTERVAL MINUTES (whether bells are enabled or not)
+                viewModel.setIntervalMinutes(newSettings.intervalMinutes)
+
+                // 🔔 SYNC INTERVAL BELLS STATE
+                if (newSettings.intervalBellsEnabled != audioState.intervalBellsEnabled) {
                     viewModel.toggleIntervalBells()
                 }
-                viewModel.setIntervalMinutes(newSettings.intervalMinutes)
 
                 // DON'T auto-start binaural beats when settings change
                 // They will only start when meditation starts
@@ -782,4 +890,213 @@ fun formatTime(seconds: Int): String {
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60
     return "%02d:%02d".format(minutes, remainingSeconds)
+}
+
+/**
+ * 🎉 BEAUTIFUL MEDITATION COMPLETION DIALOG
+ * Shows session stats and celebration
+ */
+@Composable
+fun MeditationCompletionDialog(
+    sessionDuration: Long, // in seconds
+    breathingPattern: String,
+    binauralBeat: String?,
+    backgroundSound: String?,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 🎉 Celebration Header
+                Text(
+                    text = "🎉",
+                    fontSize = 48.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Text(
+                    text = "Meditation Complete!",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ⏰ Duration Display
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = formatTimeWithMinutes(sessionDuration.toInt()),
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "of mindful meditation",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 📊 Session Details
+                if (breathingPattern.isNotEmpty() || binauralBeat != null || backgroundSound != null) {
+                    Text(
+                        text = "Session Details:",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (breathingPattern.isNotEmpty() && breathingPattern != "None") {
+                        SessionDetailRow(
+                            icon = "🌬️",
+                            label = "Breathing Pattern",
+                            value = breathingPattern
+                        )
+                    }
+
+                    if (binauralBeat != null) {
+                        SessionDetailRow(
+                            icon = "🧠",
+                            label = "Binaural Beat",
+                            value = binauralBeat
+                        )
+                    }
+
+                    if (backgroundSound != null) {
+                        SessionDetailRow(
+                            icon = "🎵",
+                            label = "Background Sound",
+                            value = backgroundSound
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // ✨ Motivational Message
+                Text(
+                    text = "Great job! Your mindfulness practice is making a difference. 🌟",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 👍 Dismiss Button
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Continue")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 📊 SESSION DETAIL ROW
+ * Shows individual session setting with responsive layout
+ */
+@Composable
+fun SessionDetailRow(
+    icon: String,
+    label: String,
+    value: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        // Label row with icon
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = icon,
+                fontSize = 14.sp,
+                modifier = Modifier.width(20.dp)
+            )
+
+            Text(
+                text = "$label:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Value row with proper spacing
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, top = 2.dp)
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/**
+ * ⏰ FORMAT TIME WITH MINUTES AND SECONDS
+ * Shows time in "5m 30s" format
+ */
+fun formatTimeWithMinutes(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+
+    return when {
+        minutes > 0 && remainingSeconds > 0 -> "${minutes}m ${remainingSeconds}s"
+        minutes > 0 -> "${minutes}m"
+        else -> "${remainingSeconds}s"
+    }
 }
