@@ -584,15 +584,16 @@ private fun getMoodGradient(mood: String): Brush {
 
 
 
-// Simplified entry streak calculation
+// 🔥 PROPER CONSECUTIVE DAY STREAK CALCULATION
 private fun getEntryStreak(entry: JournalEntry, allEntries: List<JournalEntry>): Int {
     val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-    // Group entries by date (YYYY-MM-DD format)
+    // Group entries by date and get sorted unique dates
     val entriesByDate = allEntries
         .groupBy { entryItem ->
             calendar.timeInMillis = entryItem.creationTimestamp
-            "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}-${calendar.get(Calendar.DAY_OF_MONTH)}"
+            dateFormat.format(Date(entryItem.creationTimestamp))
         }
         .keys
         .sorted()
@@ -600,9 +601,25 @@ private fun getEntryStreak(entry: JournalEntry, allEntries: List<JournalEntry>):
 
     if (entriesByDate.isEmpty()) return 0
 
-    // Simple streak: count how many consecutive days we have entries
-    // For now, just return the number of unique days with entries
-    return entriesByDate.size.coerceAtMost(30) // Cap at 30 for display
+    // Calculate consecutive day streak from most recent entry
+    var streak = 0
+    val today = dateFormat.format(Date())
+
+    // Start from today or the most recent entry date
+    calendar.time = dateFormat.parse(entriesByDate.first()) ?: Date()
+
+    for (dateStr in entriesByDate) {
+        val expectedDate = dateFormat.format(calendar.time)
+
+        if (dateStr == expectedDate) {
+            streak++
+            calendar.add(Calendar.DAY_OF_YEAR, -1) // Go back one day
+        } else {
+            break // Streak broken
+        }
+    }
+
+    return streak.coerceAtMost(365) // Cap at 365 for display
 }
 
 @Composable

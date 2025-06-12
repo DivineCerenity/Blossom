@@ -94,8 +94,8 @@ class MeditationAudioManager @Inject constructor(
                         )
                         _isLoading.value = false
 
-                        // Start with fade in effect
-                        fadeInPlayer(this)
+                        // 🎵 NO FADE - INSTANT FULL VOLUME FOR SEAMLESS LOOPS!
+                        setVolume(_audioState.value.volume, _audioState.value.volume)
 
                         Log.d("MeditationAudio", "Started playing: ${sound.name}. Total active sounds: ${currentActiveSounds.size}")
                     }
@@ -143,19 +143,14 @@ class MeditationAudioManager @Inject constructor(
      */
     fun stopSound() {
         try {
-            // Stop all background sounds
+            // Stop all background sounds - NO FADE FOR SEAMLESS LOOPS!
             activeBackgroundPlayers.values.forEach { player ->
                 try {
                     try {
                         if (player.isPlaying) {
-                            fadeOutPlayer(player) {
-                                try {
-                                    player.stop()
-                                    player.release()
-                                } catch (e: Exception) {
-                                    Log.e("MeditationAudio", "Error stopping background player", e)
-                                }
-                            }
+                            // 🎵 INSTANT STOP - NO FADE OUT!
+                            player.stop()
+                            player.release()
                         } else {
                             player.release()
                         }
@@ -173,21 +168,20 @@ class MeditationAudioManager @Inject constructor(
             }
             activeBackgroundPlayers.clear()
 
-            // Stop main background sound (backward compatibility)
+            // Stop main background sound (backward compatibility) - NO FADE!
             try {
                 if (mediaPlayer?.isPlaying == true) {
-                    fadeOut(1000) {
-                        try {
-                            mediaPlayer?.apply {
-                                if (isPlaying) {
-                                    stop()
-                                }
-                                release()
+                    // 🎵 INSTANT STOP - NO FADE FOR SEAMLESS LOOPS!
+                    try {
+                        mediaPlayer?.apply {
+                            if (isPlaying) {
+                                stop()
                             }
-                            mediaPlayer = null
-                        } catch (e: Exception) {
-                            Log.e("MeditationAudio", "Error in fade out completion", e)
+                            release()
                         }
+                        mediaPlayer = null
+                    } catch (e: Exception) {
+                        Log.e("MeditationAudio", "Error stopping main player", e)
                     }
                 } else {
                     try {
@@ -365,34 +359,11 @@ class MeditationAudioManager @Inject constructor(
                     activeBellPlayers.add(this)
                     start()
 
-                    // Add beautiful fade out effect after 5 seconds
+                    // 🔔 CLEAN BELL SOUND - NO FADE EFFECTS!
                     coroutineScope.launch {
                         delay(5000) // Let bell ring for 5 seconds
 
-                        // Fade out over 1 second
-                        val fadeSteps = 20
-                        val fadeDelay = 50L // 50ms per step = 1 second total
-                        val volumeStep = 0.8f / fadeSteps
-
-                        for (i in 1..fadeSteps) {
-                            try {
-                                if (isPlaying) {
-                                    val newVolume = 0.8f - (volumeStep * i)
-                                    setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
-                                    delay(fadeDelay)
-                                } else {
-                                    break // Stop fading if not playing
-                                }
-                            } catch (e: IllegalStateException) {
-                                Log.w("MeditationAudio", "Bell player in invalid state during fade, stopping fade")
-                                break
-                            } catch (e: Exception) {
-                                Log.e("MeditationAudio", "Error during bell fade", e)
-                                break
-                            }
-                        }
-
-                        // Remove from active list after fade
+                        // Remove from active list after natural completion
                         try {
                             activeBellPlayers.remove(this@apply)
                             if (isPlaying) {
@@ -417,101 +388,7 @@ class MeditationAudioManager @Inject constructor(
         }
     }
     
-    /**
-     * 🎵 Fade in effect - gradually increase volume (for main player)
-     */
-    private fun fadeIn(durationMs: Long = 2000) {
-        fadeJob?.cancel()
-        fadeJob = coroutineScope.launch {
-            val targetVolume = _audioState.value.volume
-            val steps = 20
-            val stepDuration = durationMs / steps
-            val volumeStep = targetVolume / steps
-
-            mediaPlayer?.setVolume(0f, 0f)
-
-            for (i in 1..steps) {
-                delay(stepDuration)
-                val currentVolume = volumeStep * i
-                mediaPlayer?.setVolume(currentVolume, currentVolume)
-            }
-        }
-    }
-
-    /**
-     * 🎵 Fade in effect for specific player
-     */
-    private fun fadeInPlayer(player: MediaPlayer, durationMs: Long = 2000) {
-        coroutineScope.launch {
-            val targetVolume = _audioState.value.volume
-            val steps = 20
-            val stepDuration = durationMs / steps
-            val volumeStep = targetVolume / steps
-
-            player.setVolume(0f, 0f)
-
-            for (i in 1..steps) {
-                delay(stepDuration)
-                val currentVolume = volumeStep * i
-                try {
-                    if (player.isPlaying) {
-                        player.setVolume(currentVolume, currentVolume)
-                    }
-                } catch (e: Exception) {
-                    Log.e("MeditationAudio", "Error in fade in", e)
-                    break
-                }
-            }
-        }
-    }
-
-    /**
-     * 🎵 Fade out effect - gradually decrease volume (for main player)
-     */
-    private fun fadeOut(durationMs: Long = 1500, onComplete: () -> Unit = {}) {
-        fadeJob?.cancel()
-        fadeJob = coroutineScope.launch {
-            val currentVolume = _audioState.value.volume
-            val steps = 15
-            val stepDuration = durationMs / steps
-            val volumeStep = currentVolume / steps
-
-            for (i in 1..steps) {
-                delay(stepDuration)
-                val newVolume = currentVolume - (volumeStep * i)
-                mediaPlayer?.setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
-            }
-
-            onComplete()
-        }
-    }
-
-    /**
-     * 🎵 Fade out effect for specific player
-     */
-    private fun fadeOutPlayer(player: MediaPlayer, durationMs: Long = 1500, onComplete: () -> Unit = {}) {
-        coroutineScope.launch {
-            val currentVolume = _audioState.value.volume
-            val steps = 15
-            val stepDuration = durationMs / steps
-            val volumeStep = currentVolume / steps
-
-            for (i in 1..steps) {
-                delay(stepDuration)
-                val newVolume = currentVolume - (volumeStep * i)
-                try {
-                    if (player.isPlaying) {
-                        player.setVolume(newVolume.coerceAtLeast(0f), newVolume.coerceAtLeast(0f))
-                    }
-                } catch (e: Exception) {
-                    Log.e("MeditationAudio", "Error in fade out", e)
-                    break
-                }
-            }
-
-            onComplete()
-        }
-    }
+    // 🎵 FADE EFFECTS REMOVED FOR SEAMLESS AUDACITY LOOPS! 🎵
 
     /**
      * 🧹 Clean up resources

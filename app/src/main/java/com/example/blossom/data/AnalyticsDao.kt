@@ -23,33 +23,29 @@ interface AnalyticsDao {
     @Query("SELECT * FROM meditation_sessions WHERE startTime >= :startTime AND startTime <= :endTime")
     suspend fun getMeditationSessionsInRange(startTime: Long, endTime: Long): List<MeditationSession>
     
-    // 📈 STREAK CALCULATIONS
+    // 📈 STREAK CALCULATIONS (INCLUDING ALL SESSIONS!)
     @Query("""
-        SELECT COUNT(*) as streak FROM (
-            SELECT DATE(startTime/1000, 'unixepoch', 'localtime') as date
-            FROM meditation_sessions 
-            WHERE completed = 1 
-            GROUP BY DATE(startTime/1000, 'unixepoch', 'localtime')
-            ORDER BY date DESC
-        ) WHERE date >= DATE('now', '-' || (
-            SELECT COUNT(*) FROM (
-                SELECT DATE(startTime/1000, 'unixepoch', 'localtime') as date
-                FROM meditation_sessions 
-                WHERE completed = 1 
-                GROUP BY DATE(startTime/1000, 'unixepoch', 'localtime')
-                ORDER BY date DESC
-            )
-        ) || ' days')
+        SELECT COUNT(DISTINCT DATE(startTime/1000, 'unixepoch', 'localtime')) as streak
+        FROM meditation_sessions
+        WHERE DATE(startTime/1000, 'unixepoch', 'localtime') >= (
+            SELECT DATE('now', 'localtime', '-' ||
+                (SELECT COUNT(DISTINCT DATE(startTime/1000, 'unixepoch', 'localtime'))
+                 FROM meditation_sessions) || ' days')
+        )
     """)
     suspend fun getCurrentStreak(): Int
     
+    // 📊 TOTAL SESSION COUNTS (INCLUDING STOPPED SESSIONS)
+    @Query("SELECT COUNT(*) FROM meditation_sessions")
+    suspend fun getTotalSessions(): Int
+
     @Query("SELECT COUNT(*) FROM meditation_sessions WHERE completed = 1")
     suspend fun getTotalCompletedSessions(): Int
-    
-    @Query("SELECT SUM(duration) FROM meditation_sessions WHERE completed = 1")
+
+    @Query("SELECT SUM(duration) FROM meditation_sessions")
     suspend fun getTotalMeditationTime(): Int?
-    
-    @Query("SELECT AVG(duration) FROM meditation_sessions WHERE completed = 1")
+
+    @Query("SELECT AVG(duration) FROM meditation_sessions")
     suspend fun getAverageMeditationTime(): Int?
     
     // 🌬️ PATTERN INSIGHTS
@@ -83,15 +79,14 @@ interface AnalyticsDao {
     """)
     suspend fun getFavoriteTheme(): String?
     
-    // 📅 WEEKLY DATA
+    // 📅 WEEKLY DATA (INCLUDING ALL SESSIONS)
     @Query("""
-        SELECT 
+        SELECT
             DATE(startTime/1000, 'unixepoch', 'localtime') as date,
             SUM(duration) as totalTime,
             COUNT(*) as sessionCount
-        FROM meditation_sessions 
-        WHERE completed = 1 
-        AND startTime >= :weekStartTime 
+        FROM meditation_sessions
+        WHERE startTime >= :weekStartTime
         AND startTime <= :weekEndTime
         GROUP BY DATE(startTime/1000, 'unixepoch', 'localtime')
         ORDER BY date

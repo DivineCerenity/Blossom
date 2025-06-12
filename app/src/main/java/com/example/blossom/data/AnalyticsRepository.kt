@@ -52,19 +52,19 @@ class AnalyticsRepository @Inject constructor(
     // 📈 GET MEDITATION STATISTICS
     suspend fun getMeditationStats(): MeditationStats {
         val currentStreak = analyticsDao.getCurrentStreak()
-        val totalSessions = analyticsDao.getTotalCompletedSessions()
+        val totalSessions = analyticsDao.getTotalSessions() // 🎯 NOW INCLUDES ALL SESSIONS!
         val totalTime = analyticsDao.getTotalMeditationTime() ?: 0
         val averageTime = analyticsDao.getAverageMeditationTime() ?: 0
         val favoritePattern = analyticsDao.getFavoriteBreathingPattern()
         val favoriteBeat = analyticsDao.getFavoriteBinauralBeat()
         val favoriteTheme = analyticsDao.getFavoriteTheme()
-        
-        // Calculate this week's stats
+
+        // Calculate this week's stats (including all sessions)
         val weekStart = getWeekStartTime()
         val weekEnd = getWeekEndTime()
         val weekSessions = analyticsDao.getMeditationSessionsInRange(weekStart, weekEnd)
-        val sessionsThisWeek = weekSessions.filter { it.completed }.size
-        val timeThisWeek = weekSessions.filter { it.completed }.sumOf { it.duration }
+        val sessionsThisWeek = weekSessions.size // 🎯 ALL SESSIONS THIS WEEK!
+        val timeThisWeek = weekSessions.sumOf { it.duration } // 🎯 ALL TIME THIS WEEK!
         
         // Calculate longest streak (simplified - could be enhanced)
         val longestStreak = currentStreak // For now, using current as longest
@@ -163,21 +163,7 @@ class AnalyticsRepository @Inject constructor(
     fun getAllAchievements(): Flow<List<Achievement>> = analyticsDao.getAllAchievements()
     fun getUnlockedAchievements(): Flow<List<Achievement>> = analyticsDao.getUnlockedAchievements()
     
-    suspend fun initializeAchievements() {
-        // Initialize default achievements if they don't exist
-        val achievements = listOf(
-            Achievement("first_meditation", "First Steps", "Complete your first meditation", "🧘‍♂️", null, AchievementCategory.MEDITATION_COUNT, 1),
-            Achievement("week_warrior", "Week Warrior", "Meditate for 7 days in a row", "🔥", null, AchievementCategory.MEDITATION_STREAK, 7),
-            Achievement("zen_master", "Zen Master", "Complete 100 meditation sessions", "🏆", null, AchievementCategory.MEDITATION_COUNT, 100),
-            Achievement("deep_diver", "Deep Diver", "Meditate for 60+ minutes in one session", "🌊", null, AchievementCategory.MEDITATION_TIME, 3600),
-            Achievement("pattern_explorer", "Pattern Explorer", "Try all breathing patterns", "🌬️", null, AchievementCategory.PATTERN_EXPLORER, 9),
-            Achievement("frequency_finder", "Frequency Finder", "Try all binaural beats", "🧠", null, AchievementCategory.FREQUENCY_FINDER, 13)
-        )
 
-        achievements.forEach { achievement ->
-            analyticsDao.insertOrUpdateAchievement(achievement)
-        }
-    }
 
     /**
      * 🔄 RESET ALL ANALYTICS DATA
@@ -202,7 +188,7 @@ class AnalyticsRepository @Inject constructor(
         
         val sessions = analyticsDao.getMeditationSessionsInRange(startOfDay, endOfDay)
         val completedSessions = sessions.filter { it.completed }
-        val totalTime = completedSessions.sumOf { it.duration }
+        val totalTime = sessions.sumOf { it.duration } // 🎯 INCLUDE ALL SESSION TIME!
         
         val journalEntries = journalDao.getAllEntries().first()
             .count { it.creationTimestamp >= startOfDay && it.creationTimestamp <= endOfDay }
@@ -214,7 +200,7 @@ class AnalyticsRepository @Inject constructor(
         val analytics = DailyAnalytics(
             date = dateStr,
             meditationTime = totalTime,
-            meditationSessions = completedSessions.size,
+            meditationSessions = sessions.size, // 🎯 ALL SESSIONS (including stopped)
             journalEntries = journalEntries,
             prayersAdded = prayersAdded,
             prayersAnswered = prayersAnswered
@@ -225,18 +211,118 @@ class AnalyticsRepository @Inject constructor(
     
     private suspend fun checkAchievements() {
         val stats = getMeditationStats()
-        
-        // Check meditation count achievements
-        if (stats.totalSessions >= 1) {
-            analyticsDao.unlockAchievement("first_meditation", System.currentTimeMillis())
+        val journalInsights = getJournalInsights()
+        val prayerInsights = getPrayerInsights()
+
+        // 🧘‍♂️ MEDITATION COUNT ACHIEVEMENTS
+        checkAndUnlock("first_meditation", stats.totalSessions >= 1)
+        checkAndUnlock("meditation_explorer", stats.totalSessions >= 5)
+        checkAndUnlock("meditation_enthusiast", stats.totalSessions >= 10)
+        checkAndUnlock("meditation_devotee", stats.totalSessions >= 25)
+        checkAndUnlock("meditation_master", stats.totalSessions >= 50)
+        checkAndUnlock("zen_master", stats.totalSessions >= 100)
+        checkAndUnlock("enlightened_soul", stats.totalSessions >= 250)
+        checkAndUnlock("meditation_legend", stats.totalSessions >= 500)
+
+        // 🔥 MEDITATION STREAK ACHIEVEMENTS
+        checkAndUnlock("streak_starter", stats.currentStreak >= 3)
+        checkAndUnlock("week_warrior", stats.currentStreak >= 7)
+        checkAndUnlock("fortnight_fighter", stats.currentStreak >= 14)
+        checkAndUnlock("month_master", stats.currentStreak >= 30)
+        checkAndUnlock("season_sage", stats.currentStreak >= 90)
+        checkAndUnlock("year_yogi", stats.currentStreak >= 365)
+
+        // ⏰ MEDITATION TIME ACHIEVEMENTS (in minutes)
+        val totalMinutes = stats.totalTime / 60
+        checkAndUnlock("first_hour", totalMinutes >= 60)
+        checkAndUnlock("time_traveler", totalMinutes >= 300) // 5 hours
+        checkAndUnlock("mindful_marathon", totalMinutes >= 600) // 10 hours
+        checkAndUnlock("zen_zone", totalMinutes >= 1200) // 20 hours
+        checkAndUnlock("meditation_mountain", totalMinutes >= 3000) // 50 hours
+        checkAndUnlock("enlightenment_peak", totalMinutes >= 6000) // 100 hours
+
+        // 📝 JOURNAL ACHIEVEMENTS
+        checkAndUnlock("first_thoughts", journalInsights.totalEntries >= 1)
+        checkAndUnlock("storyteller", journalInsights.totalEntries >= 10)
+        checkAndUnlock("memory_keeper", journalInsights.totalEntries >= 25)
+        checkAndUnlock("life_chronicler", journalInsights.totalEntries >= 50)
+        checkAndUnlock("wisdom_writer", journalInsights.totalEntries >= 100)
+
+        // 🙏 PRAYER ACHIEVEMENTS
+        checkAndUnlock("first_prayer", prayerInsights.totalPrayers >= 1)
+        checkAndUnlock("faithful_heart", prayerInsights.totalPrayers >= 10)
+        checkAndUnlock("prayer_warrior", prayerInsights.totalPrayers >= 25)
+        checkAndUnlock("spiritual_guardian", prayerInsights.totalPrayers >= 50)
+        checkAndUnlock("divine_messenger", prayerInsights.answeredPrayers >= 5)
+        checkAndUnlock("miracle_witness", prayerInsights.answeredPrayers >= 10)
+
+        // 🎨 EXPLORATION ACHIEVEMENTS
+        checkAndUnlock("pattern_explorer", stats.favoritePattern != null)
+        checkAndUnlock("frequency_finder", stats.favoriteBinauralBeat != null)
+        checkAndUnlock("theme_wanderer", stats.favoriteTheme != null)
+    }
+
+    private suspend fun checkAndUnlock(achievementId: String, condition: Boolean) {
+        if (condition) {
+            analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
         }
-        if (stats.totalSessions >= 100) {
-            analyticsDao.unlockAchievement("zen_master", System.currentTimeMillis())
-        }
-        
-        // Check streak achievements
-        if (stats.currentStreak >= 7) {
-            analyticsDao.unlockAchievement("week_warrior", System.currentTimeMillis())
+    }
+
+    /**
+     * 🏆 INITIALIZE ALL ACHIEVEMENTS
+     * Call this when the app starts to ensure all achievements exist
+     */
+    suspend fun initializeAchievements() {
+        val achievements = listOf(
+            // 🧘‍♂️ MEDITATION COUNT ACHIEVEMENTS
+            Achievement("first_meditation", "First Steps", "Complete your first meditation session", "🌱", null, AchievementCategory.MEDITATION_COUNT, 1),
+            Achievement("meditation_explorer", "Explorer", "Complete 5 meditation sessions", "🗺️", null, AchievementCategory.MEDITATION_COUNT, 5),
+            Achievement("meditation_enthusiast", "Enthusiast", "Complete 10 meditation sessions", "⭐", null, AchievementCategory.MEDITATION_COUNT, 10),
+            Achievement("meditation_devotee", "Devotee", "Complete 25 meditation sessions", "🙏", null, AchievementCategory.MEDITATION_COUNT, 25),
+            Achievement("meditation_master", "Master", "Complete 50 meditation sessions", "🎯", null, AchievementCategory.MEDITATION_COUNT, 50),
+            Achievement("zen_master", "Zen Master", "Complete 100 meditation sessions", "🧘‍♂️", null, AchievementCategory.MEDITATION_COUNT, 100),
+            Achievement("enlightened_soul", "Enlightened Soul", "Complete 250 meditation sessions", "✨", null, AchievementCategory.MEDITATION_COUNT, 250),
+            Achievement("meditation_legend", "Legend", "Complete 500 meditation sessions", "👑", null, AchievementCategory.MEDITATION_COUNT, 500),
+
+            // 🔥 MEDITATION STREAK ACHIEVEMENTS
+            Achievement("streak_starter", "Streak Starter", "Meditate for 3 consecutive days", "🔥", null, AchievementCategory.MEDITATION_STREAK, 3),
+            Achievement("week_warrior", "Week Warrior", "Meditate for 7 consecutive days", "⚔️", null, AchievementCategory.MEDITATION_STREAK, 7),
+            Achievement("fortnight_fighter", "Fortnight Fighter", "Meditate for 14 consecutive days", "🛡️", null, AchievementCategory.MEDITATION_STREAK, 14),
+            Achievement("month_master", "Month Master", "Meditate for 30 consecutive days", "📅", null, AchievementCategory.MEDITATION_STREAK, 30),
+            Achievement("season_sage", "Season Sage", "Meditate for 90 consecutive days", "🌸", null, AchievementCategory.MEDITATION_STREAK, 90),
+            Achievement("year_yogi", "Year Yogi", "Meditate for 365 consecutive days", "🎊", null, AchievementCategory.MEDITATION_STREAK, 365),
+
+            // ⏰ MEDITATION TIME ACHIEVEMENTS
+            Achievement("first_hour", "First Hour", "Meditate for a total of 1 hour", "⏰", null, AchievementCategory.MEDITATION_TIME, 60),
+            Achievement("time_traveler", "Time Traveler", "Meditate for a total of 5 hours", "🕐", null, AchievementCategory.MEDITATION_TIME, 300),
+            Achievement("mindful_marathon", "Mindful Marathon", "Meditate for a total of 10 hours", "🏃‍♂️", null, AchievementCategory.MEDITATION_TIME, 600),
+            Achievement("zen_zone", "Zen Zone", "Meditate for a total of 20 hours", "🌀", null, AchievementCategory.MEDITATION_TIME, 1200),
+            Achievement("meditation_mountain", "Meditation Mountain", "Meditate for a total of 50 hours", "⛰️", null, AchievementCategory.MEDITATION_TIME, 3000),
+            Achievement("enlightenment_peak", "Enlightenment Peak", "Meditate for a total of 100 hours", "🏔️", null, AchievementCategory.MEDITATION_TIME, 6000),
+
+            // 📝 JOURNAL ACHIEVEMENTS
+            Achievement("first_thoughts", "First Thoughts", "Write your first journal entry", "💭", null, AchievementCategory.JOURNAL_ENTRIES, 1),
+            Achievement("storyteller", "Storyteller", "Write 10 journal entries", "📖", null, AchievementCategory.JOURNAL_ENTRIES, 10),
+            Achievement("memory_keeper", "Memory Keeper", "Write 25 journal entries", "🗂️", null, AchievementCategory.JOURNAL_ENTRIES, 25),
+            Achievement("life_chronicler", "Life Chronicler", "Write 50 journal entries", "📚", null, AchievementCategory.JOURNAL_ENTRIES, 50),
+            Achievement("wisdom_writer", "Wisdom Writer", "Write 100 journal entries", "✍️", null, AchievementCategory.JOURNAL_ENTRIES, 100),
+
+            // 🙏 PRAYER ACHIEVEMENTS
+            Achievement("first_prayer", "First Prayer", "Add your first prayer request", "🙏", null, AchievementCategory.PRAYERS_ANSWERED, 1),
+            Achievement("faithful_heart", "Faithful Heart", "Add 10 prayer requests", "💖", null, AchievementCategory.PRAYERS_ANSWERED, 10),
+            Achievement("prayer_warrior", "Prayer Warrior", "Add 25 prayer requests", "⚔️", null, AchievementCategory.PRAYERS_ANSWERED, 25),
+            Achievement("spiritual_guardian", "Spiritual Guardian", "Add 50 prayer requests", "👼", null, AchievementCategory.PRAYERS_ANSWERED, 50),
+            Achievement("divine_messenger", "Divine Messenger", "Have 5 prayers answered", "📬", null, AchievementCategory.PRAYERS_ANSWERED, 5),
+            Achievement("miracle_witness", "Miracle Witness", "Have 10 prayers answered", "✨", null, AchievementCategory.PRAYERS_ANSWERED, 10),
+
+            // 🎨 EXPLORATION ACHIEVEMENTS
+            Achievement("pattern_explorer", "Pattern Explorer", "Try different breathing patterns", "🌬️", null, AchievementCategory.PATTERN_EXPLORER, 1),
+            Achievement("frequency_finder", "Frequency Finder", "Discover binaural beats", "🎵", null, AchievementCategory.FREQUENCY_FINDER, 1),
+            Achievement("theme_wanderer", "Theme Wanderer", "Explore different themes", "🎨", null, AchievementCategory.THEME_EXPLORER, 1)
+        )
+
+        achievements.forEach { achievement ->
+            analyticsDao.insertOrUpdateAchievement(achievement)
         }
     }
     
