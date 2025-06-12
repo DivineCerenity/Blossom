@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
             val settingsUiState by settingsViewModel.uiState.collectAsState()
 
             BlossomTheme(
+                darkTheme = settingsUiState.isDarkMode,
                 selectedTheme = settingsUiState.selectedTheme
             ) {
                 BlossomApp()

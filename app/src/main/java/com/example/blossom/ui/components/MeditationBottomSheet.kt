@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import com.example.blossom.data.BreathingPattern
 import com.example.blossom.data.BreathingPatterns
 import com.example.blossom.data.MeditationSound
+import com.example.blossom.data.BinauralBeat
+import com.example.blossom.data.BinauralBeats
 
 /**
  * 🌟 MEDITATION BOTTOM SHEET SETTINGS
@@ -34,7 +37,13 @@ data class MeditationSettings(
     val intervalBellsEnabled: Boolean = false,
     val intervalMinutes: Int = 5,
     val breathingGuideEnabled: Boolean = false,
-    val breathingPattern: BreathingPattern? = null
+    val breathingPattern: BreathingPattern? = null,
+    // 🧠 BINAURAL BEATS SETTINGS
+    val binauralBeatsEnabled: Boolean = false,
+    val selectedBinauralBeat: BinauralBeat? = null,
+    val binauralVolume: Float = 0.5f,
+    val mixWithNatureSounds: Boolean = false,
+    val natureSoundVolume: Float = 0.7f
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,7 +132,23 @@ fun MeditationBottomSheet(
                     onEnabledChanged = { settings = settings.copy(breathingGuideEnabled = it) },
                     onPatternChanged = { settings = settings.copy(breathingPattern = it) }
                 )
-                
+
+                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                // 🧠 BINAURAL BEATS SECTION
+                BinauralBeatsSection(
+                    enabled = settings.binauralBeatsEnabled,
+                    selectedBeat = settings.selectedBinauralBeat,
+                    binauralVolume = settings.binauralVolume,
+                    mixWithNatureSounds = settings.mixWithNatureSounds,
+                    natureSoundVolume = settings.natureSoundVolume,
+                    onEnabledChanged = { settings = settings.copy(binauralBeatsEnabled = it) },
+                    onBeatChanged = { settings = settings.copy(selectedBinauralBeat = it) },
+                    onBinauralVolumeChanged = { settings = settings.copy(binauralVolume = it) },
+                    onMixingToggled = { settings = settings.copy(mixWithNatureSounds = it) },
+                    onNatureSoundVolumeChanged = { settings = settings.copy(natureSoundVolume = it) }
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 // Action Buttons
@@ -609,6 +634,155 @@ private fun BreathingGuideSection(
                             fontWeight = FontWeight.Medium
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 🧠 BINAURAL BEATS SECTION
+ */
+@Composable
+private fun BinauralBeatsSection(
+    enabled: Boolean,
+    selectedBeat: BinauralBeat?,
+    binauralVolume: Float,
+    mixWithNatureSounds: Boolean,
+    natureSoundVolume: Float,
+    onEnabledChanged: (Boolean) -> Unit,
+    onBeatChanged: (BinauralBeat?) -> Unit,
+    onBinauralVolumeChanged: (Float) -> Unit,
+    onMixingToggled: (Boolean) -> Unit,
+    onNatureSoundVolumeChanged: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Psychology,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Column {
+                    Text(
+                        text = "Binaural Beats",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Brainwave entrainment",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChanged,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                )
+            )
+        }
+
+        if (enabled) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Binaural Beat Selection
+                Text(
+                    text = "Choose Frequency",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // No binaural beat option
+                    item {
+                        FilterChip(
+                            onClick = { onBeatChanged(null) },
+                            label = { Text("None") },
+                            selected = selectedBeat == null,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+
+                    // All binaural beats
+                    items(BinauralBeats.getAllPresets()) { beat ->
+                        FilterChip(
+                            onClick = { onBeatChanged(beat) },
+                            label = {
+                                Text(
+                                    text = "${beat.frequency}Hz",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
+                            selected = selectedBeat?.id == beat.id,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+                }
+
+                selectedBeat?.let { beat ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = beat.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = beat.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Volume Controls
+                if (selectedBeat != null) {
+                    BinauralBeatsControls(
+                        binauralVolume = binauralVolume,
+                        natureSoundVolume = natureSoundVolume,
+                        isMixingEnabled = mixWithNatureSounds,
+                        onBinauralVolumeChanged = onBinauralVolumeChanged,
+                        onNatureSoundVolumeChanged = onNatureSoundVolumeChanged,
+                        onMixingToggled = onMixingToggled
+                    )
                 }
             }
         }

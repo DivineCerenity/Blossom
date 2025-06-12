@@ -153,14 +153,59 @@ object BreathingPatterns {
         exhaleSeconds = 3,
         holdOutSeconds = 0
     )
+
+    /**
+     * 🎯 7-5-5 Pattern (YOUR SPECIAL REQUEST!)
+     * Perfect balance of inhale, hold, and exhale
+     */
+    val PATTERN_755 = BreathingPattern(
+        id = "pattern_755",
+        name = "7-5-5 Pattern",
+        description = "Your perfect breathing rhythm - inhale 7, hold 5, exhale 5",
+        inhaleSeconds = 7,
+        holdInSeconds = 5,
+        exhaleSeconds = 5,
+        holdOutSeconds = 0
+    )
+
+    /**
+     * ⚡ Power Breathing
+     * Energizing pattern for vitality
+     */
+    val POWER_BREATHING = BreathingPattern(
+        id = "power_6262",
+        name = "Power Breathing",
+        description = "Energizing rhythm for vitality and focus",
+        inhaleSeconds = 6,
+        holdInSeconds = 2,
+        exhaleSeconds = 6,
+        holdOutSeconds = 2
+    )
+
+    /**
+     * 💜 Coherent Breathing
+     * Heart rate variability optimization
+     */
+    val COHERENT_BREATHING = BreathingPattern(
+        id = "coherent_55",
+        name = "Coherent Breathing",
+        description = "5-5 rhythm for heart rate variability and balance",
+        inhaleSeconds = 5,
+        holdInSeconds = 0,
+        exhaleSeconds = 5,
+        holdOutSeconds = 0
+    )
     
     /**
      * Get all preset patterns
      */
     fun getAllPresets(): List<BreathingPattern> = listOf(
         BOX_BREATHING,
+        PATTERN_755,  // YOUR SPECIAL REQUEST FIRST! 🎯
         BREATHING_478,
         TRIANGLE_BREATHING,
+        POWER_BREATHING,
+        COHERENT_BREATHING,
         ENERGIZING_BREATH,
         DEEP_MEDITATION,
         QUICK_CALM

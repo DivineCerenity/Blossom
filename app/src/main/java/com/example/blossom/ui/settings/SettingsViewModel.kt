@@ -27,12 +27,25 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(selectedTheme = theme)
             }
         }
+        viewModelScope.launch {
+            settingsRepository.getDarkMode().collect { isDarkMode ->
+                _uiState.value = _uiState.value.copy(isDarkMode = isDarkMode)
+            }
+        }
     }
 
     fun selectTheme(theme: AppTheme) {
         viewModelScope.launch {
             settingsRepository.saveSelectedTheme(theme)
             _uiState.value = _uiState.value.copy(selectedTheme = theme)
+        }
+    }
+
+    fun toggleDarkMode() {
+        viewModelScope.launch {
+            val newDarkMode = !_uiState.value.isDarkMode
+            settingsRepository.saveDarkMode(newDarkMode)
+            _uiState.value = _uiState.value.copy(isDarkMode = newDarkMode)
         }
     }
 }

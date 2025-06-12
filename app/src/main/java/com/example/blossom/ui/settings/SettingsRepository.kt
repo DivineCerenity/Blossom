@@ -17,6 +17,7 @@ class SettingsRepository @Inject constructor(
         context.getSharedPreferences("blossom_settings", Context.MODE_PRIVATE)
 
     private val _selectedTheme = MutableStateFlow(loadSelectedTheme())
+    private val _isDarkMode = MutableStateFlow(loadDarkMode())
 
     private fun loadSelectedTheme(): AppTheme {
         val themeName = sharedPreferences.getString("selected_theme", AppTheme.TWILIGHT_MYSTIQUE.name)
@@ -27,8 +28,16 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    private fun loadDarkMode(): Boolean {
+        return sharedPreferences.getBoolean("dark_mode", false)
+    }
+
     fun getSelectedTheme(): Flow<AppTheme> {
         return _selectedTheme.asStateFlow()
+    }
+
+    fun getDarkMode(): Flow<Boolean> {
+        return _isDarkMode.asStateFlow()
     }
 
     suspend fun saveSelectedTheme(theme: AppTheme) {
@@ -36,5 +45,12 @@ class SettingsRepository @Inject constructor(
             .putString("selected_theme", theme.name)
             .apply()
         _selectedTheme.value = theme
+    }
+
+    suspend fun saveDarkMode(isDarkMode: Boolean) {
+        sharedPreferences.edit()
+            .putBoolean("dark_mode", isDarkMode)
+            .apply()
+        _isDarkMode.value = isDarkMode
     }
 }

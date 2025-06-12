@@ -23,17 +23,19 @@ fun AddEditHabitScreen(
         topBar = {
             TopAppBar(
                 title = {
-    Text(
-        text = if (habitId == null) "Add Habit" else "Edit Habit",
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onPrimary
-    )
-},
+                    Text(
+                        text = if (habitId == null) "Add Habit" else "Edit Habit",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { padding ->

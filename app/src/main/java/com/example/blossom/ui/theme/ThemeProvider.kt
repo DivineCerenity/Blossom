@@ -66,7 +66,7 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = Color(0xFF0F1419),
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF1C2128),
+        surface = Color(0xFF0F1419),  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
         surfaceVariant = CoastalBlueGray,
         onSurfaceVariant = CoastalSageGray,
@@ -111,7 +111,7 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = AutumnDarkGreen,
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A3A2A),
+        surface = AutumnDarkGreen,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
         surfaceVariant = AutumnTerracotta,
         onSurfaceVariant = AutumnSageGreen,
@@ -156,7 +156,7 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = MeadowNavy,
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A3A3A),
+        surface = MeadowNavy,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
         surfaceVariant = MeadowForest,
         onSurfaceVariant = MeadowSage,
@@ -201,7 +201,7 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = Color(0xFF1A1F1A),
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A2F2A),
+        surface = Color(0xFF1A1F1A),  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
         surfaceVariant = DesertSage,
         onSurfaceVariant = DesertMint,
@@ -246,7 +246,7 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = TwilightPurple,
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF3A2A3A),
+        surface = TwilightPurple,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
         surfaceVariant = TwilightMauve,
         onSurfaceVariant = TwilightBeige,

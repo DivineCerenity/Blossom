@@ -2,7 +2,9 @@ package com.example.blossom.ui.journal
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,6 +54,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.graphics.graphicsLayer
+import com.example.blossom.ui.components.EntryActionBottomSheet
+import com.example.blossom.ui.components.JournalActions
 
 enum class SortOption(val label: String) {
     NEWEST("Newest First"),
@@ -63,7 +67,7 @@ enum class SortOption(val label: String) {
     SAD_FIRST("Sad First")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun JournalListScreen(
     viewModel: JournalListViewModel,
@@ -83,6 +87,10 @@ fun JournalListScreen(
     var showImageGallery by remember { mutableStateOf(false) }
     var galleryImages by remember { mutableStateOf<List<String>>(emptyList()) }
     var galleryStartIndex by remember { mutableStateOf(0) }
+
+    // 📱 BOTTOM SHEET STATE
+    var showActionBottomSheet by remember { mutableStateOf(false) }
+    var selectedEntryForAction by remember { mutableStateOf<JournalEntry?>(null) }
 
     Scaffold(
         topBar = {
@@ -242,35 +250,14 @@ fun JournalListScreen(
                 ) {
                     if (entries.isNotEmpty()) {
                         item {
-                            HintCard(text = "Swipe left to edit, swipe right to delete.")
+                            HintCard(text = "💡 Tap to view • Long press for actions")
                         }
                     }
                     itemsIndexed(
                         items = entries,
                         key = { _, entry -> entry.id }
                     ) { index, entry ->
-                        // This state is correctly defined inside the 'items' scope,
-                        // ensuring each item has its own dismiss state.
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { swipeValue ->
-                                when (swipeValue) {
-                                    // Swipe left-to-right to delete
-                                    SwipeToDismissBoxValue.StartToEnd -> {
-                                        viewModel.onDeletionInitiated(entry)
-                                        // Return false to prevent immediate dismissal.
-                                        // The item will be removed when the dialog is confirmed.
-                                        false
-                                    }
-                                    // Swipe right-to-left to edit
-                                    SwipeToDismissBoxValue.EndToStart -> {
-                                        onNavigateToEditEntry(entry.id)
-                                        // Return false to snap the item back after navigating.
-                                        false
-                                    }
-                                    SwipeToDismissBoxValue.Settled -> false
-                                }
-                            }
-                        )
+                        // Clean entry without swipe gestures - bottom sheet handles actions
 
                         // We use an AnimatedVisibility to remove the item from UI
                         // smoothly when its deletion is initiated.
@@ -307,59 +294,24 @@ fun JournalListScreen(
                             enter = fadeIn(),
                             exit = shrinkOut() + fadeOut()
                         ) {
-                            SwipeToDismissBox(
-                                state = dismissState,
+                            Card(
                                 modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .graphicsLayer {
                                         translationY = slideOffset.toFloat()
                                         this.alpha = alpha
-                                    },
-                                backgroundContent = {
-                                    val direction = dismissState.targetValue
-                                    val color by animateColorAsState(
-                                        targetValue = when (direction) {
-                                            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                            SwipeToDismissBoxValue.Settled -> Color.Transparent
-                                        },
-                                        label = "Swipe background color"
-                                    )
-                                    val icon = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
-                                        SwipeToDismissBoxValue.Settled -> null
                                     }
-                                    val alignment = when(direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                                        SwipeToDismissBoxValue.Settled -> Alignment.Center // Won't be visible
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(color)
-                                            .padding(horizontal = 20.dp),
-                                        contentAlignment = alignment
-                                    ) {
-                                        icon?.let {
-                                            Icon(
-                                                imageVector = it,
-                                                contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd) "Edit" else "Delete",
-                                                tint = Color.White
-                                            )
-                                        }
-                                    }
-                                }
-                            ) { // <-- CORRECT SYNTAX: Content is in the trailing lambda
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .clickable {
+                                    .combinedClickable(
+                                        onClick = {
                                             selectedEntry = entry
                                             showEntryDetail = true
                                         },
+                                        onLongClick = {
+                                            selectedEntryForAction = entry
+                                            showActionBottomSheet = true
+                                        }
+                                    ),
                                     shape = MaterialTheme.shapes.medium,
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                     colors = CardDefaults.cardColors(
@@ -476,13 +428,31 @@ fun JournalListScreen(
                                     )
                                 }
                             }
-                            }
                         }
                     }
                 }
             }
         }
 
+        // 📱 JOURNAL ENTRY ACTION BOTTOM SHEET
+        selectedEntryForAction?.let { entry ->
+            EntryActionBottomSheet(
+                isVisible = showActionBottomSheet,
+                title = "Journal Entry Actions",
+                actions = JournalActions.getActions(
+                    onEdit = {
+                        onNavigateToEditEntry(entry.id)
+                    },
+                    onDelete = {
+                        viewModel.onDeletionInitiated(entry)
+                    }
+                ),
+                onDismiss = {
+                    showActionBottomSheet = false
+                    selectedEntryForAction = null
+                }
+            )
+        }
 
     }
 }

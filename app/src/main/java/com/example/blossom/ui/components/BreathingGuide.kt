@@ -59,23 +59,39 @@ fun UnifiedBreathingTimer(
 
     val animatedScale by animateFloatAsState(
         targetValue = targetScale,
-        animationSpec = tween(
-            durationMillis = 300,
-            easing = FastOutSlowInEasing
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
         ),
         label = "breathing_scale"
     )
 
-    // Pulsing glow effect
+    // Enhanced pulsing glow effect with breathing rhythm
     val infiniteTransition = rememberInfiniteTransition(label = "breathing_glow")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
+        initialValue = 0.2f,
+        targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(
+                durationMillis = if (breathingState.isActive) {
+                    (breathingState.currentPattern?.totalCycleSeconds ?: 20) * 1000
+                } else 3000,
+                easing = FastOutSlowInEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow_alpha"
+    )
+
+    // Floating particles animation
+    val particleOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "particle_rotation"
     )
 
     Box(
@@ -89,18 +105,27 @@ fun UnifiedBreathingTimer(
             },
         contentAlignment = Alignment.Center
     ) {
-        // Outer glow rings (only when breathing is active)
+        // Enhanced outer glow rings with floating particles
         if (breathingState.isActive) {
-            repeat(3) { index ->
+            // Glow rings
+            repeat(4) { index ->
                 Box(
                     modifier = Modifier
-                        .size((340 + index * 20).dp)
+                        .size((340 + index * 15).dp)
                         .clip(CircleShape)
                         .background(
-                            primaryColor.copy(alpha = glowAlpha * (0.08f - index * 0.02f))
+                            primaryColor.copy(alpha = glowAlpha * (0.12f - index * 0.025f))
                         )
                 )
             }
+
+            // Floating particles
+            FloatingBreathingParticles(
+                particleOffset = particleOffset,
+                primaryColor = primaryColor,
+                breathingPhase = breathingState.currentPhase,
+                modifier = Modifier.size(400.dp)
+            )
         }
 
         // Main unified circle with timer and breathing
@@ -605,6 +630,54 @@ private fun BreathingPatternCard(
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 }
+            )
+        }
+    }
+}
+
+/**
+ * ✨ FLOATING BREATHING PARTICLES
+ * Beautiful particles that float around the breathing circle
+ */
+@Composable
+private fun FloatingBreathingParticles(
+    particleOffset: Float,
+    primaryColor: Color,
+    breathingPhase: BreathingPhase,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val center = this.center
+        val radius = size.minDimension / 2 - 50.dp.toPx()
+
+        // Particle colors based on breathing phase
+        val particleColor = when (breathingPhase) {
+            BreathingPhase.INHALE -> primaryColor.copy(alpha = 0.6f)
+            BreathingPhase.HOLD_IN -> primaryColor.copy(alpha = 0.4f)
+            BreathingPhase.EXHALE -> primaryColor.copy(alpha = 0.8f)
+            BreathingPhase.HOLD_OUT -> primaryColor.copy(alpha = 0.3f)
+        }
+
+        // Draw floating particles
+        repeat(8) { index ->
+            val angle = (particleOffset + index * 45f) * PI / 180f
+            val particleRadius = radius + (sin(particleOffset * PI / 180f + index) * 20f).toFloat()
+
+            val x = center.x + (particleRadius * kotlin.math.cos(angle)).toFloat()
+            val y = center.y + (particleRadius * kotlin.math.sin(angle)).toFloat()
+
+            // Particle size varies with breathing
+            val particleSize = when (breathingPhase) {
+                BreathingPhase.INHALE -> 4.dp.toPx() + 2.dp.toPx()
+                BreathingPhase.HOLD_IN -> 6.dp.toPx()
+                BreathingPhase.EXHALE -> 4.dp.toPx() - 1.dp.toPx()
+                BreathingPhase.HOLD_OUT -> 3.dp.toPx()
+            }
+
+            drawCircle(
+                color = particleColor,
+                radius = particleSize,
+                center = androidx.compose.ui.geometry.Offset(x, y)
             )
         }
     }

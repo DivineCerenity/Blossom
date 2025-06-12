@@ -36,6 +36,8 @@ import com.example.blossom.ui.prayer.PrayerSortOption
 import com.example.blossom.ui.prayer.EditPrayerRequestDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import com.example.blossom.ui.components.EntryActionBottomSheet
+import com.example.blossom.ui.components.PrayerActions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -66,6 +68,10 @@ fun PrayerRequestsScreen(
     var editingPrayerRequest by remember { mutableStateOf<PrayerRequest?>(null) }
     var prayerToDelete by remember { mutableStateOf<PrayerRequest?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // 📱 BOTTOM SHEET STATE
+    var showActionBottomSheet by remember { mutableStateOf(false) }
+    var selectedPrayerForAction by remember { mutableStateOf<PrayerRequest?>(null) }
 
     Scaffold(
         topBar = {
@@ -247,26 +253,10 @@ fun PrayerRequestsScreen(
                 ) {
                     if (sortedPrayerRequests.isNotEmpty()) {
                         item {
-                            HintCard(text = "Swipe left to edit, swipe right to delete. Long press to toggle answered.")
+                            HintCard(text = "💡 Long press for actions")
                         }
                     }
                     itemsIndexed(sortedPrayerRequests, key = { _, prayer -> prayer.id }) { index, prayerRequest ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value: SwipeToDismissBoxValue ->
-                                when (value) {
-                                    SwipeToDismissBoxValue.StartToEnd -> {
-                                        prayerToDelete = prayerRequest
-                                        showDeleteDialog = true
-                                        false // Wait for confirmation
-                                    }
-                                    SwipeToDismissBoxValue.EndToStart -> {
-                                        editingPrayerRequest = prayerRequest
-                                        false // Don't auto-dismiss
-                                    }
-                                    else -> false
-                                }
-                            }
-                        )
                         // Entry animation state
                         var isVisible by remember { mutableStateOf(false) }
                         val animationDelay = (index + 1) * 80
@@ -295,60 +285,21 @@ fun PrayerRequestsScreen(
                             isVisible = true
                         }
 
-                        SwipeToDismissBox(
-                            state = dismissState,
+                        // Clean prayer card with animation - bottom sheet handles actions
+                        PrayerRequestCard(
+                            prayerRequest = prayerRequest,
                             modifier = Modifier
                                 .graphicsLayer {
                                     translationY = slideOffset.toFloat()
                                     this.alpha = alpha
-                                },
-                                                        backgroundContent = {
-                                val direction = dismissState.dismissDirection
-                                val color by animateColorAsState(
-                                    when (dismissState.targetValue) {
-                                        SwipeToDismissBoxValue.Settled -> Color.Transparent
-                                                                                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                                        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
-                                    }
-                                )
-                                val icon = when (direction) {
-                                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-                                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
-                                    SwipeToDismissBoxValue.Settled -> null
                                 }
-                                val scale by animateFloatAsState(
-                                    if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f
-                                )
-
-                                Box(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(color)
-                                        .padding(horizontal = 20.dp),
-                                    contentAlignment = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                                        else -> Alignment.Center
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = {
+                                        selectedPrayerForAction = prayerRequest
+                                        showActionBottomSheet = true
                                     }
-                                ) {
-                                    icon?.let {
-                                        Icon(
-                                            it,
-                                            contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd) "Delete" else "Edit",
-                                            modifier = Modifier.scale(scale)
-                                        )
-                                    }
-                                }
-                            },
-                            content = {
-                                PrayerRequestCard(
-                                    prayerRequest = prayerRequest,
-                                    modifier = Modifier.combinedClickable(
-                                        onClick = {},
-                                        onLongClick = { viewModel.toggleAnswered(prayerRequest) }
-                                    )
                                 )
-                            }
                         )
                     }
                 }
@@ -401,6 +352,31 @@ fun PrayerRequestsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false; prayerToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // 📱 PRAYER REQUEST ACTION BOTTOM SHEET
+    selectedPrayerForAction?.let { prayer ->
+        EntryActionBottomSheet(
+            isVisible = showActionBottomSheet,
+            title = "Prayer Request Actions",
+            actions = PrayerActions.getActions(
+                isAnswered = prayer.isAnswered,
+                onEdit = {
+                    editingPrayerRequest = prayer
+                },
+                onDelete = {
+                    prayerToDelete = prayer
+                    showDeleteDialog = true
+                },
+                onToggleAnswered = {
+                    viewModel.toggleAnswered(prayer)
+                }
+            ),
+            onDismiss = {
+                showActionBottomSheet = false
+                selectedPrayerForAction = null
             }
         )
     }

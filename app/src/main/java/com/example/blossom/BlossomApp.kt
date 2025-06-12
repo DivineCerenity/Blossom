@@ -26,6 +26,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.blossom.ui.components.GradientText
 import com.example.blossom.ui.settings.SettingsScreen
+import com.example.blossom.ui.about.AboutScreen
+import com.example.blossom.ui.settings.AppTheme
 import com.example.blossom.ui.settings.SettingsViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blossom.ui.journal.AddEditJournalScreen
@@ -44,7 +46,12 @@ import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlossomApp() {
+fun BlossomApp(
+    onThemeChanged: (AppTheme) -> Unit = {},
+    selectedTheme: AppTheme = AppTheme.TWILIGHT_MYSTIQUE,
+    isDarkMode: Boolean = false,
+    onDarkModeChanged: (Boolean) -> Unit = {}
+) {
     val navController = rememberNavController()
 
     // Get current theme for dynamic gradient text
@@ -79,13 +86,15 @@ fun BlossomApp() {
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             },
 
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
                     val currentRoute = currentDestination?.route
@@ -165,7 +174,19 @@ fun BlossomApp() {
 
             composable(Screen.Settings.route) {
                 SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onThemeChanged = onThemeChanged,
+                    selectedTheme = selectedTheme,
+                    isDarkMode = isDarkMode,
+                    onDarkModeChanged = onDarkModeChanged,
+                    onNavigateToAbout = { navController.navigate("about") }
+                )
+            }
+
+            composable("about") {
+                AboutScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    selectedTheme = selectedTheme
                 )
             }
 

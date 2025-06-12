@@ -50,6 +50,7 @@ import kotlin.math.PI
 import com.example.blossom.ui.components.*
 import com.example.blossom.data.BreathingPattern
 import com.example.blossom.data.BreathingPatterns
+import com.example.blossom.audio.BinauralBeatsManager
 import com.example.blossom.ui.components.MeditationPhase
 import com.example.blossom.ui.components.PreparationCountdown
 import com.example.blossom.ui.components.CompletionCelebration
@@ -89,7 +90,13 @@ fun MeditateScreen() {
                 intervalBellsEnabled = false,
                 intervalMinutes = 5,
                 breathingGuideEnabled = false,
-                breathingPattern = BreathingPatterns.BOX_BREATHING
+                breathingPattern = BreathingPatterns.BOX_BREATHING,
+                // 🧠 BINAURAL BEATS DEFAULTS
+                binauralBeatsEnabled = false,
+                selectedBinauralBeat = null,
+                binauralVolume = 0.5f,
+                mixWithNatureSounds = false,
+                natureSoundVolume = 0.7f
             )
         )
     }
@@ -151,6 +158,7 @@ fun MeditateScreen() {
                 meditationPhase = MeditationPhase.COMPLETION
                 showCompletion = true
                 viewModel.stopSound() // Stop any playing sounds
+                viewModel.stopBinauralBeats() // Stop binaural beats
             }
         }
     }
@@ -208,10 +216,9 @@ fun MeditateScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Lightbulb,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                    Text(
+                        text = "💡",
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.size(20.dp)
                     )
 
@@ -279,6 +286,7 @@ fun MeditateScreen() {
                         totalTime = selectedDuration * 60
                         lastBellTime = 0
                         viewModel.stopSound()
+                        viewModel.stopBinauralBeats() // Stop binaural beats
                         meditationPhase = MeditationPhase.PREPARATION
                     } else {
                         // Long press to open settings
@@ -311,8 +319,25 @@ fun MeditateScreen() {
                     meditationPhase = MeditationPhase.ACTIVE
                     isRunning = true
                     isPaused = false
-                    if (audioState.currentSound != null) {
-                        viewModel.resumeSound()
+
+                    // 🎵 START SOUNDS WHEN MEDITATION BEGINS
+                    if (meditationSettings.selectedSound != null) {
+                        viewModel.playSound(meditationSettings.selectedSound!!)
+                    }
+
+                    // 🧠 START BINAURAL BEATS WHEN MEDITATION BEGINS
+                    if (meditationSettings.binauralBeatsEnabled && meditationSettings.selectedBinauralBeat != null) {
+                        val natureSoundFile = if (meditationSettings.mixWithNatureSounds && meditationSettings.selectedSound != null) {
+                            meditationSettings.selectedSound!!.fileName
+                        } else null
+
+                        viewModel.startBinauralBeats(
+                            beat = meditationSettings.selectedBinauralBeat!!,
+                            binauralVolume = meditationSettings.binauralVolume,
+                            mixWithNature = meditationSettings.mixWithNatureSounds,
+                            natureSoundFile = natureSoundFile,
+                            natureVolume = meditationSettings.natureSoundVolume
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxSize()
@@ -330,6 +355,8 @@ fun MeditateScreen() {
                     // Reset for next session
                     timeRemaining = selectedDuration * 60
                     totalTime = selectedDuration * 60
+                    // Ensure binaural beats are stopped
+                    viewModel.stopBinauralBeats()
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -342,17 +369,16 @@ fun MeditateScreen() {
             availableSounds = com.example.blossom.data.MeditationSounds.allSounds,
             onSettingsChanged = { newSettings ->
                 meditationSettings = newSettings
-                // Apply settings to ViewModel
-                if (newSettings.selectedSound != null) {
-                    viewModel.playSound(newSettings.selectedSound!!)
-                } else {
-                    viewModel.stopSound()
-                }
+                // DON'T auto-play sounds when settings change
+                // Sounds will only play when meditation starts
                 viewModel.setVolume(newSettings.volume)
                 if (newSettings.intervalBellsEnabled) {
                     viewModel.toggleIntervalBells()
                 }
                 viewModel.setIntervalMinutes(newSettings.intervalMinutes)
+
+                // DON'T auto-start binaural beats when settings change
+                // They will only start when meditation starts
             },
             onSave = { settings ->
                 showBottomSheet = false
@@ -443,6 +469,19 @@ private fun SmartStatusDisplay(
                         label = { Text("Bells ${settings.intervalMinutes}m") },
                         leadingIcon = {
                             Text("🔔", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    )
+                }
+            }
+
+            // 🧠 Binaural beats chip (if enabled)
+            if (settings.binauralBeatsEnabled && settings.selectedBinauralBeat != null) {
+                item {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text("${settings.selectedBinauralBeat!!.frequency}Hz") },
+                        leadingIcon = {
+                            Text("🧠", style = MaterialTheme.typography.bodyMedium)
                         }
                     )
                 }

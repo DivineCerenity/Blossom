@@ -63,23 +63,20 @@ fun DailyHabitsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "Daily Habits",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        style = MaterialTheme.typography.headlineSmall
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 actions = {
                     IconButton(onClick = onNavigateToAddHabit) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add Habit",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            contentDescription = "Add Habit"
                         )
                     }
                 }
