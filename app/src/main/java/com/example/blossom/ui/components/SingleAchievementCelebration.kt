@@ -22,8 +22,8 @@ import com.example.blossom.data.Achievement
 import kotlinx.coroutines.delay
 
 /**
- * 🎉 SINGLE ACHIEVEMENT CELEBRATION DIALOG
- * Beautiful popup for individual achievement unlocks
+ * 🎉 SINGLE MILESTONE CELEBRATION DIALOG
+ * Beautiful popup for individual milestone unlocks
  */
 @Composable
 fun SingleAchievementCelebrationDialog(
@@ -56,8 +56,8 @@ fun SingleAchievementCelebrationDialog(
 }
 
 /**
- * 🏆 SINGLE ACHIEVEMENT CARD
- * Beautiful animated card for individual achievement
+ * 🏆 SINGLE MILESTONE CARD
+ * Beautiful animated card for individual milestone
  */
 @Composable
 fun SingleAchievementCard(achievement: Achievement) {
@@ -119,9 +119,9 @@ fun SingleAchievementCard(achievement: Achievement) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 🎉 Achievement Unlocked Header
+                // 🎉 Milestone Unlocked Header
                 Text(
-                    text = "🎉 Achievement Unlocked! 🎉",
+                    text = "🎉 Milestone Unlocked! 🎉",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -129,14 +129,14 @@ fun SingleAchievementCard(achievement: Achievement) {
                     textAlign = TextAlign.Center
                 )
                 
-                // 🏆 Achievement Icon
+                // 🏆 Milestone Icon
                 Text(
                     text = achievement.icon,
                     fontSize = (64 * iconScale).sp,
                     modifier = Modifier.scale(iconScale)
                 )
                 
-                // 🏅 Achievement Title
+                // 🏅 Milestone Title
                 Text(
                     text = achievement.title,
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -146,7 +146,7 @@ fun SingleAchievementCard(achievement: Achievement) {
                     textAlign = TextAlign.Center
                 )
                 
-                // 📝 Achievement Description
+                // 📝 Milestone Description
                 Text(
                     text = achievement.description,
                     style = MaterialTheme.typography.bodyLarge,
@@ -171,8 +171,8 @@ fun SingleAchievementCard(achievement: Achievement) {
 }
 
 /**
- * 🎊 ACHIEVEMENT CELEBRATION MANAGER
- * Manages showing individual achievement celebrations
+ * 🎊 MILESTONE CELEBRATION MANAGER
+ * Manages showing individual milestone celebrations
  */
 @Composable
 fun AchievementCelebrationManager(

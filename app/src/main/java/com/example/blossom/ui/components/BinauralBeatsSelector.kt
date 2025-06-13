@@ -337,11 +337,7 @@ private fun BinauralBeatCard(
 @Composable
 fun BinauralBeatsControls(
     binauralVolume: Float,
-    natureSoundVolume: Float,
-    isMixingEnabled: Boolean,
     onBinauralVolumeChanged: (Float) -> Unit,
-    onNatureSoundVolumeChanged: (Float) -> Unit,
-    onMixingToggled: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -387,77 +383,5 @@ fun BinauralBeatsControls(
             }
         }
         
-        // Nature sounds mixing
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Mix with Nature Sounds",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Text(
-                    text = "Layer binaural beats with background sounds",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-            
-            Switch(
-                checked = isMixingEnabled,
-                onCheckedChange = onMixingToggled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                )
-            )
-        }
-        
-        // Nature sounds volume (when mixing is enabled)
-        if (isMixingEnabled) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Nature Sounds Volume",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(text = "🌊", style = MaterialTheme.typography.titleMedium)
-                    
-                    Slider(
-                        value = natureSoundVolume,
-                        onValueChange = onNatureSoundVolumeChanged,
-                        valueRange = 0f..1f,
-                        modifier = Modifier.weight(1f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.secondary,
-                            activeTrackColor = MaterialTheme.colorScheme.secondary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                        )
-                    )
-                    
-                    Text(
-                        text = "${(natureSoundVolume * 100).toInt()}%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(40.dp)
-                    )
-                }
-            }
-        }
-    }
 }

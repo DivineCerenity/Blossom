@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Blossom Adaptive Icon Foreground -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Cherry Blossom Foreground for Adaptive Icon -->
+    <!-- Centered and sized for safe area (72dp circle) -->
+    
+    <group android:translateX="54" android:translateY="54">
+        
+        <!-- Petal 1 (top) -->
+        <path
+            android:fillColor="#E91E63"
+            android:pathData="M 0,-25 Q -15,-10 -8,5 Q -3,0 0,-5 Q 3,0 8,5 Q 15,-10 0,-25 Z" />
+        
+        <!-- Petal 2 (top-right) -->
+        <path
+            android:fillColor="#E91E63"
+            android:pathData="M 18,-8 Q 8,7 -2,2 Q 3,-3 6,-8 Q 3,-13 -2,-18 Q 8,-23 18,-8 Z" />
+        
+        <!-- Petal 3 (bottom-right) -->
+        <path
+            android:fillColor="#E91E63"
+            android:pathData="M 18,20 Q 8,5 -2,10 Q 3,15 6,20 Q 3,25 -2,30 Q 8,35 18,20 Z" />
+        
+        <!-- Petal 4 (bottom-left) -->
+        <path
+            android:fillColor="#E91E63"
+            android:pathData="M -18,20 Q -8,5 2,10 Q -3,15 -6,20 Q -3,25 2,30 Q -8,35 -18,20 Z" />
+        
+        <!-- Petal 5 (top-left) -->
+        <path
+            android:fillColor="#E91E63"
+            android:pathData="M -18,-8 Q -8,7 2,2 Q -3,-3 -6,-8 Q -3,-13 2,-18 Q -8,-23 -18,-8 Z" />
+        
+        <!-- Center of the blossom -->
+        <circle
+            android:cx="0"
+            android:cy="0"
+            android:radius="8"
+            android:fillColor="#FFF8DC" />
+        
+        <circle
+            android:cx="0"
+            android:cy="0"
+            android:radius="5"
+            android:fillColor="#FFE4B5" />
+            
+    </group>
+</vector>

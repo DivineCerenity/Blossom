@@ -36,9 +36,9 @@ enum class AppTheme(
         displayName = "Forest Whisper",
         description = "Deep emeralds to soft moss - grounding and natural"
     ),
-    TROPICAL_SUNSET(
-        displayName = "Tropical Sunset",
-        description = "Coral pinks to warm oranges - vibrant and energizing"
+    SERENE_LOTUS(
+        displayName = "Serene Lotus",
+        description = "Soft lavender, gentle green, and warm cream for calm, mindful, spiritual focus"
     ),
     TWILIGHT_MYSTIQUE(
         displayName = "Twilight Mystique",

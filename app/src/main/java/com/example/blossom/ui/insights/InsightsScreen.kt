@@ -2,6 +2,7 @@ package com.example.blossom.ui.insights
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -358,6 +359,11 @@ fun StatCard(
  */
 @Composable
 fun WeeklyMeditationChart(weeklyData: WeeklyData) {
+    val maxMinutes = weeklyData.meditationTimes.maxOrNull()?.coerceAtLeast(1) ?: 1
+    val barMaxHeight = 100.dp
+    val barColor = MaterialTheme.colorScheme.primary
+    val barEmptyColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -391,33 +397,29 @@ fun WeeklyMeditationChart(weeklyData: WeeklyData) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Simple bar chart representation
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 weeklyData.dates.forEachIndexed { index, date ->
-                    val time = weeklyData.meditationTimes.getOrNull(index) ?: 0
-                    val maxTime = weeklyData.meditationTimes.maxOrNull() ?: 1
-                    val height = if (maxTime > 0) ((time.toFloat() / maxTime) * 60).dp else 4.dp
-
+                    val timeMinutes = (weeklyData.meditationTimes.getOrNull(index) ?: 0) / 60f
+                    val animatedHeight by animateDpAsState(
+                        targetValue = if (maxMinutes > 0) (timeMinutes / maxMinutes * barMaxHeight.value).dp else 4.dp,
+                        animationSpec = tween(durationMillis = 600), label = "bar_height"
+                    )
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        // Bar
                         Box(
                             modifier = Modifier
                                 .width(24.dp)
-                                .height(maxOf(height, 4.dp))
+                                .height(maxOf(animatedHeight, 4.dp))
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(
-                                    if (time > 0) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    if (timeMinutes > 0f) barColor else barEmptyColor
                                 )
                         )
-
-                        // Day label
                         Text(
                             text = getDayLabel(date),
                             style = MaterialTheme.typography.bodySmall,
@@ -445,8 +447,9 @@ fun MilestoneSection(
             .clickable { onViewAllMilestones() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -539,8 +542,8 @@ fun formatTotalTime(seconds: Int): String {
 }
 
 /**
- * 🏅 ACHIEVEMENT ITEM
- * Individual achievement display
+ * 🏅 MILESTONE ITEM
+ * Individual milestone display
  */
 @Composable
 fun AchievementItem(achievement: Achievement) {
@@ -584,8 +587,9 @@ fun FavoritePatternCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-        )
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -699,8 +703,9 @@ fun JournalInsightsCard(insights: JournalInsights) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -757,8 +762,9 @@ fun PrayerInsightsCard(insights: PrayerInsights) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-        )
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
@@ -822,7 +828,7 @@ fun InsightItem(
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold
             ),
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,

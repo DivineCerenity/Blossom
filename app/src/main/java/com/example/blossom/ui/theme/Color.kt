@@ -98,12 +98,12 @@ val ForestSage = Color(0xFF87A96B)          // Forest sage
 val ForestMoss = Color(0xFFADDFAD)          // Soft moss
 val ForestMint = Color(0xFFE0FFE0)          // Light mint
 
-// 🌺 TROPICAL SUNSET THEME 🌺 (Vibrant Paradise)
-val TropicalCoral = Color(0xFFFF6B6B)       // Vibrant coral
-val TropicalPeach = Color(0xFFFFB347)       // Warm peach
-val TropicalOrange = Color(0xFFFF8C42)      // Sunset orange
-val TropicalCream = Color(0xFFFFF5EE)       // Seashell cream
-val TropicalBlush = Color(0xFFFFE4E1)       // Soft blush
+// 🌸 SERENE LOTUS THEME 🌸 (Calm, Mindful, Spiritual)
+val SereneLavender = Color(0xFFB39DDB)      // Soft lavender
+val SereneGreen = Color(0xFF81C784)         // Gentle green
+val SereneCream = Color(0xFFFFF8E1)         // Warm cream
+val SereneGold = Color(0xFFFFE082)          // Gentle gold
+val SereneMidnight = Color(0xFF232946)      // Deep midnight blue
 
 // 🌙 TWILIGHT MYSTIQUE THEME 🌙 (Your Custom Palette 5)
 val TwilightPurple = Color(0xFF483952)     // Deep purple

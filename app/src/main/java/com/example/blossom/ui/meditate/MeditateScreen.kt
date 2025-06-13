@@ -87,7 +87,7 @@ fun MeditateScreen() {
     var sessionStartTime by remember { mutableLongStateOf(0L) }
     var sessionEndTime by remember { mutableLongStateOf(0L) }
 
-    // 🎉 ACHIEVEMENT CELEBRATION STATE
+    // 🎉 MILESTONE CELEBRATION STATE
     var newAchievements by remember { mutableStateOf<List<Achievement>>(emptyList()) }
     var showAchievementCelebration by remember { mutableStateOf(false) }
 
@@ -109,9 +109,7 @@ fun MeditateScreen() {
                 binauralBeatsEnabled = false,
                 selectedBinauralBeat = null,
                 binauralVolume = 0.5f,
-                mixWithNatureSounds = false,
-                natureSoundVolume = 0.7f
-            )
+                            )
         )
     }
 
@@ -186,7 +184,7 @@ fun MeditateScreen() {
                 sessionEndTime = System.currentTimeMillis()
                 val actualDuration = (sessionEndTime - sessionStartTime) / 1000 // Convert to seconds
 
-                // 🎉 RECORD SESSION (achievements will be checked in ViewModel)
+                // 🎉 RECORD SESSION (milestones will be checked in ViewModel)
                 insightsViewModel.recordMeditationSessionWithAchievements(
                     startTime = sessionStartTime,
                     endTime = sessionEndTime,
@@ -360,7 +358,7 @@ fun MeditateScreen() {
 
                                 android.util.Log.d("MeditationTracking", "Session details - Breathing: $breathingPattern, Binaural: $binauralBeat, Sound: $backgroundSound, Theme: $theme")
 
-                                // 🎉 RECORD SESSION AND CHECK FOR ACHIEVEMENTS!
+                                // 🎉 RECORD SESSION AND CHECK FOR MILESTONES!
                                 insightsViewModel.recordMeditationSessionWithAchievements(
                                     startTime = sessionStartTime,
                                     endTime = sessionEndTime,
@@ -446,16 +444,15 @@ fun MeditateScreen() {
 
                     // 🧠 START BINAURAL BEATS WHEN MEDITATION BEGINS
                     if (meditationSettings.binauralBeatsEnabled && meditationSettings.selectedBinauralBeat != null) {
-                        val natureSoundFile = if (meditationSettings.mixWithNatureSounds && meditationSettings.selectedSound != null) {
+                        val natureSoundFile = if (meditationSettings.selectedSound != null) {
                             meditationSettings.selectedSound!!.fileName
                         } else null
 
                         viewModel.startBinauralBeats(
                             beat = meditationSettings.selectedBinauralBeat!!,
                             binauralVolume = meditationSettings.binauralVolume,
-                            mixWithNature = meditationSettings.mixWithNatureSounds,
                             natureSoundFile = natureSoundFile,
-                            natureVolume = meditationSettings.natureSoundVolume
+                            natureVolume = 0.7f
                         )
                     }
                 },
@@ -484,7 +481,7 @@ fun MeditateScreen() {
             )
         }
 
-        // 🎉 ACHIEVEMENT CELEBRATION POPUP WITH CONFETTI!
+        // 🎉 MILESTONE CELEBRATION POPUP WITH CONFETTI!
         if (showAchievementCelebration && newAchievements.isNotEmpty()) {
             AchievementCelebrationDialog(
                 achievements = newAchievements,

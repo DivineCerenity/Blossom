@@ -112,7 +112,7 @@ fun AboutScreen(
                 }
             }
 
-            // 🏆 ACHIEVEMENT SYSTEM VICTORY
+            // 🏆 MILESTONE SYSTEM VICTORY
             item {
                 AnimatedVisibility(
                     visible = showContent,
@@ -217,7 +217,7 @@ private fun JourneySection() {
         icon = null
     ) {
         Text(
-            text = "What started as a simple meditation app became an extraordinary collaboration between human creativity and AI innovation. Together, we've built something truly magical - a world-class meditation experience with a rock-solid achievement system that celebrates every milestone.",
+            text = "What started as a simple meditation app became an extraordinary collaboration between human creativity and AI innovation. Together, we've built something truly magical - a world-class meditation experience with a rock-solid milestone system that celebrates every milestone.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             lineHeight = 24.sp
@@ -226,7 +226,7 @@ private fun JourneySection() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "From the first breathing pattern to the perfect achievement celebrations, every feature was crafted with love, attention to detail, and relentless debugging until everything worked flawlessly.",
+            text = "From the first breathing pattern to the perfect milestone celebrations, every feature was crafted with love, attention to detail, and relentless debugging until everything worked flawlessly.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             lineHeight = 22.sp
@@ -243,7 +243,7 @@ private fun FeaturesSection() {
         val features = listOf(
             "🌬️ 9 Professional Breathing Patterns" to "Including your custom 7-5-5 pattern",
             "🧠 13 Scientific Binaural Beats" to "1Hz to 40Hz covering all brainwave states",
-            "🏆 Rock-Solid Achievement System" to "Perfect celebrations with beautiful popups",
+            "🏆 Rock-Solid Milestone System" to "Perfect celebrations with beautiful popups",
             "🌙 Perfect Dark Mode" to "Flawless consistency across all screens",
             "📱 Professional Bottom Sheets" to "Elegant long-press actions",
             "🎨 5 Beautiful Themes" to "Including your favorite Twilight Mystique",
@@ -289,11 +289,11 @@ private fun CollaborationSection() {
 @Composable
 private fun AchievementVictorySection() {
     SectionCard(
-        title = "🏆 Achievement System Victory!",
+        title = "🏆 Milestone System Victory!",
         icon = null
     ) {
         Text(
-            text = "After intense debugging and collaboration, we achieved the impossible - a perfect achievement system! Every achievement now triggers in the right context with beautiful 6-7 second celebrations.",
+            text = "After intense debugging and collaboration, we achieved the impossible - a perfect milestone system! Every milestone now triggers in the right context with beautiful 6-7 second celebrations.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             lineHeight = 24.sp
@@ -302,12 +302,12 @@ private fun AchievementVictorySection() {
         Spacer(modifier = Modifier.height(16.dp))
 
         val victories = listOf(
-            "✅ Fixed Achievement ID Mismatches" to "Journal & Prayer achievements work perfectly",
-            "✅ Context Separation Perfected" to "Each feature triggers its own achievements",
-            "✅ Theme Achievements Fixed" to "Now tracks actual theme changes in Settings",
+            "✅ Fixed Milestone ID Mismatches" to "Journal & Prayer milestones work perfectly",
+            "✅ Context Separation Perfected" to "Each feature triggers its own milestones",
+            "✅ Theme Milestones Fixed" to "Now tracks actual theme changes in Settings",
             "✅ Visual Bugs Eliminated" to "Beautiful gradient popups, no more transparency issues",
             "✅ Perfect Timing Achieved" to "6-7 second celebrations with proper navigation",
-            "✅ Rock-Solid Reliability" to "No more false triggers or missing achievements"
+            "✅ Rock-Solid Reliability" to "No more false triggers or missing milestones"
         )
 
         victories.forEach { (victory, description) ->
@@ -318,7 +318,7 @@ private fun AchievementVictorySection() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "🎉 The achievement system is now ROCK SOLID! 🎉",
+            text = "🎉 The milestone system is now ROCK SOLID! 🎉",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -332,18 +332,18 @@ private fun AchievementVictorySection() {
 @Composable
 private fun TechnicalSection() {
     SectionCard(
-        title = "🚀 Technical Achievements",
+        title = "🚀 Technical Milestones",
         icon = null
     ) {
         val achievements = listOf(
             "🏗️ Modern Architecture" to "MVVM with Compose & Hilt",
             "🎵 Advanced Audio Engine" to "Professional binaural beats system",
-            "🏆 Perfect Achievement System" to "Context-aware with beautiful celebrations",
+            "🏆 Perfect Milestone System" to "Context-aware with beautiful celebrations",
             "🌈 Dynamic Theming" to "5 themes with gradient support",
             "📱 Responsive UI" to "Beautiful animations & interactions",
             "💾 Robust Data Layer" to "Room database with migrations",
             "🔄 State Management" to "Clean, reactive architecture",
-            "🎯 Intelligent Context Separation" to "Features trigger achievements correctly"
+            "🎯 Intelligent Context Separation" to "Features trigger milestones correctly"
         )
 
         achievements.forEach { (tech, description) ->
@@ -385,7 +385,7 @@ private fun CelebrationSection() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Together, we've created a world-class meditation app with perfect achievements, beautiful celebrations, and rock-solid reliability that brings peace, mindfulness, and joy to users around the world.",
+                text = "Together, we've created a world-class meditation app with perfect milestones, beautiful celebrations, and rock-solid reliability that brings peace, mindfulness, and joy to users around the world.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,

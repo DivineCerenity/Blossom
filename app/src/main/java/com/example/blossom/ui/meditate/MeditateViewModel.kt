@@ -62,14 +62,12 @@ class MeditateViewModel @Inject constructor(
     fun startBinauralBeats(
         beat: BinauralBeat,
         binauralVolume: Float = 0.5f,
-        mixWithNature: Boolean = false,
         natureSoundFile: String? = null,
         natureVolume: Float = 0.7f
     ) {
         binauralBeatsManager.startBinauralBeats(
             beat = beat,
             binauralVol = binauralVolume,
-            mixWithNature = mixWithNature,
             natureSoundFile = natureSoundFile,
             natureVol = natureVolume
         )
@@ -87,9 +85,7 @@ class MeditateViewModel @Inject constructor(
         binauralBeatsManager.setBinauralVolume(volume)
     }
 
-    fun setNatureSoundVolume(volume: Float) {
-        binauralBeatsManager.setNatureSoundVolume(volume)
-    }
+    // Removed setNatureSoundVolume - no longer needed
 
     fun toggleNatureSoundMixing(enabled: Boolean, natureSoundFile: String? = null) {
         binauralBeatsManager.toggleNatureSoundMixing(enabled, natureSoundFile)

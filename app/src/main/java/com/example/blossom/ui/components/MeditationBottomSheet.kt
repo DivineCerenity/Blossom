@@ -41,9 +41,7 @@ data class MeditationSettings(
     // 🧠 BINAURAL BEATS SETTINGS
     val binauralBeatsEnabled: Boolean = false,
     val selectedBinauralBeat: BinauralBeat? = null,
-    val binauralVolume: Float = 0.5f,
-    val mixWithNatureSounds: Boolean = false,
-    val natureSoundVolume: Float = 0.7f
+    val binauralVolume: Float = 0.5f
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,13 +138,9 @@ fun MeditationBottomSheet(
                     enabled = settings.binauralBeatsEnabled,
                     selectedBeat = settings.selectedBinauralBeat,
                     binauralVolume = settings.binauralVolume,
-                    mixWithNatureSounds = settings.mixWithNatureSounds,
-                    natureSoundVolume = settings.natureSoundVolume,
                     onEnabledChanged = { settings = settings.copy(binauralBeatsEnabled = it) },
                     onBeatChanged = { settings = settings.copy(selectedBinauralBeat = it) },
-                    onBinauralVolumeChanged = { settings = settings.copy(binauralVolume = it) },
-                    onMixingToggled = { settings = settings.copy(mixWithNatureSounds = it) },
-                    onNatureSoundVolumeChanged = { settings = settings.copy(natureSoundVolume = it) }
+                    onBinauralVolumeChanged = { settings = settings.copy(binauralVolume = it) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -648,13 +642,9 @@ private fun BinauralBeatsSection(
     enabled: Boolean,
     selectedBeat: BinauralBeat?,
     binauralVolume: Float,
-    mixWithNatureSounds: Boolean,
-    natureSoundVolume: Float,
     onEnabledChanged: (Boolean) -> Unit,
     onBeatChanged: (BinauralBeat?) -> Unit,
     onBinauralVolumeChanged: (Float) -> Unit,
-    onMixingToggled: (Boolean) -> Unit,
-    onNatureSoundVolumeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -775,13 +765,10 @@ private fun BinauralBeatsSection(
 
                 // Volume Controls
                 if (selectedBeat != null) {
+                    // Only show binaural volume control now
                     BinauralBeatsControls(
                         binauralVolume = binauralVolume,
-                        natureSoundVolume = natureSoundVolume,
-                        isMixingEnabled = mixWithNatureSounds,
-                        onBinauralVolumeChanged = onBinauralVolumeChanged,
-                        onNatureSoundVolumeChanged = onNatureSoundVolumeChanged,
-                        onMixingToggled = onMixingToggled
+                        onBinauralVolumeChanged = onBinauralVolumeChanged
                     )
                 }
             }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -28,8 +29,8 @@ fun GradientText(
         )
         AppTheme.AUTUMN_HARVEST -> listOf(
             AutumnTerracotta,   // Rich terracotta
-            AutumnTeal,         // Beautiful teal
-            AutumnSageGreen     // Light sage green (better contrast in dark mode)
+            AutumnDarkGreen,    // Deep forest green for strong contrast
+            Color(0xFFF6F3E8)   // Light earthy cream for highlight
         )
         AppTheme.AURORA_DREAMS -> listOf(
             AuroraDeepPurple,   // Deep cosmic purple
@@ -61,10 +62,9 @@ fun GradientText(
             ForestEmerald,      // Emerald green
             ForestSage          // Forest sage
         )
-        AppTheme.TROPICAL_SUNSET -> listOf(
-            TropicalCoral,      // Vibrant coral
-            TropicalOrange,     // Sunset orange
-            TropicalPeach       // Warm peach
+        AppTheme.SERENE_LOTUS -> listOf(
+            SereneLavender,     // Soft lavender
+            SereneGreen         // Gentle green
         )
         AppTheme.TWILIGHT_MYSTIQUE -> listOf(
             TwilightPurple,     // Deep purple

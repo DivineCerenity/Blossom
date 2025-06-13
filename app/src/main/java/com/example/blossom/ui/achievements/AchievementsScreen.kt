@@ -25,8 +25,8 @@ import com.example.blossom.data.AchievementCategory
 import com.example.blossom.ui.insights.InsightsViewModel
 
 /**
- * 🏆 ACHIEVEMENTS SCREEN
- * Complete view of all achievements - unlocked and locked
+ * 🏆 MILESTONES SCREEN
+ * Complete view of all milestones - unlocked and locked
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +44,7 @@ fun AchievementsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "🏆 Achievements",
+                        text = "🏆 Milestones",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -84,7 +84,7 @@ fun AchievementsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                // 📊 ACHIEVEMENT SUMMARY
+                // 📊 MILESTONE SUMMARY
                 item {
                     AchievementSummaryCard(
                         totalAchievements = uiState.achievements.size,
@@ -110,7 +110,7 @@ fun AchievementsScreen(
 }
 
 /**
- * 📊 ACHIEVEMENT SUMMARY CARD
+ * 📊 MILESTONE SUMMARY CARD
  */
 @Composable
 fun AchievementSummaryCard(
@@ -146,7 +146,7 @@ fun AchievementSummaryCard(
             )
             
             Text(
-                text = "Achievements Unlocked",
+                text = "Milestones Unlocked",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -167,7 +167,7 @@ fun AchievementSummaryCard(
 }
 
 /**
- * 🏅 ACHIEVEMENT CATEGORY SECTION
+ * 🏅 MILESTONE CATEGORY SECTION
  */
 @Composable
 fun AchievementCategorySection(
@@ -177,11 +177,11 @@ fun AchievementCategorySection(
     val categoryName = when (category) {
         AchievementCategory.MEDITATION_COUNT -> "🧘‍♂️ Meditation Milestones"
         AchievementCategory.MEDITATION_STREAK -> "🔥 Meditation Streaks"
-        AchievementCategory.MEDITATION_TIME -> "⏰ Time Achievements"
+        AchievementCategory.MEDITATION_TIME -> "⏰ Time Milestones"
         AchievementCategory.MEDITATION_CONSISTENCY -> "📅 Consistency"
-        AchievementCategory.JOURNAL_ENTRIES -> "📝 Journal Achievements"
+        AchievementCategory.JOURNAL_ENTRIES -> "📝 Journal Milestones"
         AchievementCategory.JOURNAL_STREAK -> "📖 Journal Streaks"
-        AchievementCategory.PRAYERS_ANSWERED -> "🙏 Prayer Achievements"
+        AchievementCategory.PRAYERS_ANSWERED -> "🙏 Prayer Milestones"
         AchievementCategory.PRAYER_CONSISTENCY -> "💒 Prayer Consistency"
         AchievementCategory.PATTERN_EXPLORER -> "🌬️ Breathing Patterns"
         AchievementCategory.FREQUENCY_FINDER -> "🎵 Binaural Beats"
@@ -223,7 +223,7 @@ fun AchievementCategorySection(
 }
 
 /**
- * 🏅 INDIVIDUAL ACHIEVEMENT ITEM
+ * 🏅 INDIVIDUAL MILESTONE ITEM
  */
 @Composable
 fun AchievementItem(achievement: Achievement) {

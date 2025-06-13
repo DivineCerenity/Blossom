@@ -43,6 +43,7 @@ class AnalyticsRepository @Inject constructor(
             completed = completed
         )
 
+        android.util.Log.d("MeditationTracking", "Inserting session: startTime=$startTime, duration=$duration, completed=$completed")
         analyticsDao.insertMeditationSession(session)
 
         // Update daily analytics
@@ -90,7 +91,9 @@ class AnalyticsRepository @Inject constructor(
     suspend fun getWeeklyData(): WeeklyData {
         val weekStart = getWeekStartTime()
         val weekEnd = getWeekEndTime()
+        android.util.Log.d("MeditationTracking", "Querying weekly data: weekStart=$weekStart, weekEnd=$weekEnd")
         val dailyData = analyticsDao.getWeeklyMeditationData(weekStart, weekEnd)
+        android.util.Log.d("MeditationTracking", "Weekly data result: $dailyData")
         
         // Create complete week data (fill missing days with 0)
         val dates = mutableListOf<String>()
@@ -480,7 +483,14 @@ class AnalyticsRepository @Inject constructor(
     
     private fun getWeekEndTime(): Long {
         val calendar = Calendar.getInstance()
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        // Set to the start of the week (Monday)
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        // Move to the end of the week (Sunday 23:59:59.999)
+        calendar.add(Calendar.DAY_OF_WEEK, 6)
         calendar.set(Calendar.HOUR_OF_DAY, 23)
         calendar.set(Calendar.MINUTE, 59)
         calendar.set(Calendar.SECOND, 59)

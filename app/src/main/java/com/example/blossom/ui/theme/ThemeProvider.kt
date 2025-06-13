@@ -18,7 +18,7 @@ object ThemeProvider {
             AppTheme.GOLDEN_HOUR -> goldenHourLightColorScheme()
             AppTheme.MOONLIT_GARDEN -> moonlitGardenLightColorScheme()
             AppTheme.FOREST_WHISPER -> forestWhisperLightColorScheme()
-            AppTheme.TROPICAL_SUNSET -> tropicalSunsetLightColorScheme()
+            AppTheme.SERENE_LOTUS -> sereneLotusLightColorScheme()
             AppTheme.TWILIGHT_MYSTIQUE -> twilightMystiqueLightColorScheme()
         }
     }
@@ -33,7 +33,7 @@ object ThemeProvider {
             AppTheme.GOLDEN_HOUR -> goldenHourDarkColorScheme()
             AppTheme.MOONLIT_GARDEN -> moonlitGardenDarkColorScheme()
             AppTheme.FOREST_WHISPER -> forestWhisperDarkColorScheme()
-            AppTheme.TROPICAL_SUNSET -> tropicalSunsetDarkColorScheme()
+            AppTheme.SERENE_LOTUS -> sereneLotusDarkColorScheme()
             AppTheme.TWILIGHT_MYSTIQUE -> twilightMystiqueDarkColorScheme()
         }
     }
@@ -85,47 +85,47 @@ object ThemeProvider {
     
     // 🍂 AUTUMN HARVEST THEMES 🍂
     private fun autumnHarvestLightColorScheme() = lightColorScheme(
-        primary = AutumnTerracotta,
+        primary = AutumnTerracotta, // Rich terracotta
         onPrimary = Color(0xFFFFFFFF),
-        primaryContainer = AutumnSageGreen,
+        primaryContainer = AutumnSageGreen, // Sage green container
         onPrimaryContainer = Color(0xFF1A1A1A),
-        secondary = AutumnTeal,
+        secondary = AutumnDarkGreen, // Deep forest green for contrast
         onSecondary = Color(0xFFFFFFFF),
-        secondaryContainer = AutumnLimeGreen,
+        secondaryContainer = AutumnLimeGreen, // Soft lime green as highlight
         onSecondaryContainer = Color(0xFF1A1A1A),
-        tertiary = AutumnDarkGreen,
+        tertiary = AutumnTeal, // Teal as accent
         onTertiary = Color(0xFFFFFFFF),
-        tertiaryContainer = AutumnSageGreen,
+        tertiaryContainer = AutumnSageGreen, // Sage green for harmony
         onTertiaryContainer = Color(0xFF1A1A1A),
-        background = AutumnLimeGreen,
+        background = AutumnSageGreen, // Sage green background for grounded feel
         onBackground = Color(0xFF1A1A1A),
-        surface = AutumnLimeGreen,
+        surface = AutumnSageGreen, // Match surface to background for seamless look
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = AutumnSageGreen,
+        surfaceVariant = AutumnLimeGreen, // Lime green for subtle variant
         onSurfaceVariant = AutumnDarkGreen,
-        error = AutumnTerracotta
+        error = AutumnTerracotta // Terracotta for error
     )
 
     private fun autumnHarvestDarkColorScheme() = darkColorScheme(
-        primary = AutumnSageGreen,
-        onPrimary = Color(0xFF1A1A1A),
-        primaryContainer = AutumnTerracotta,
+        primary = AutumnTerracotta, // Rich terracotta
+        onPrimary = Color(0xFFFFFFFF),
+        primaryContainer = AutumnDarkGreen, // Deep forest green container
         onPrimaryContainer = Color(0xFFE5E5E5),
-        secondary = AutumnTeal,
+        secondary = AutumnSageGreen, // Sage green for contrast
         onSecondary = Color(0xFF1A1A1A),
-        secondaryContainer = AutumnDarkGreen,
+        secondaryContainer = AutumnTeal, // Teal as highlight
         onSecondaryContainer = Color(0xFFE5E5E5),
-        tertiary = AutumnLimeGreen,
+        tertiary = AutumnLimeGreen, // Lime green as accent
         onTertiary = Color(0xFF1A1A1A),
-        tertiaryContainer = AutumnTerracotta,
+        tertiaryContainer = AutumnTerracotta, // Terracotta for harmony
         onTertiaryContainer = Color(0xFFE5E5E5),
-        background = AutumnDarkGreen,
+        background = AutumnDarkGreen, // Deep green background for grounded feel
         onBackground = Color(0xFFE5E5E5),
-        surface = AutumnDarkGreen,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
+        surface = AutumnDarkGreen, // Match surface to background for seamless look
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = AutumnTerracotta,
+        surfaceVariant = AutumnTerracotta, // Terracotta for subtle variant
         onSurfaceVariant = AutumnSageGreen,
-        error = AutumnTerracotta
+        error = AutumnTerracotta // Terracotta for error
     )
 
     // 🌌 AURORA DREAMS THEMES 🌌
@@ -189,9 +189,9 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFF1A1A1A),
         background = SakuraCream,  // 🌸 WARM CREAM BACKGROUND
         onBackground = Color(0xFF1A1A1A),
-        surface = SakuraCream,  // 🌸 MATCH BACKGROUND FOR CONSISTENCY
+        surface = SakuraCream,  // Gentle, neutral base for all surfaces
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = SakuraSoftPink,
+        surfaceVariant = SakuraSoftPink, // Use pink only for cards/sections
         onSurfaceVariant = SakuraRose,
         error = SakuraRose
     )
@@ -211,9 +211,9 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = Color(0xFF2A1F2A),  // 🌸 DEEP WARM BACKGROUND
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A1F2A),  // 🌸 MATCH BACKGROUND FOR CONSISTENCY
+        surface = Color(0xFF2A1F2A),  // Match background for all surfaces
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = SakuraRose,
+        surfaceVariant = SakuraRose, // Use pink only for cards/sections
         onSurfaceVariant = SakuraSoftPink,
         error = SakuraBlush
     )
@@ -398,49 +398,49 @@ object ThemeProvider {
         error = ForestEmerald
     )
 
-    // 🌺 TROPICAL SUNSET THEMES 🌺
-    private fun tropicalSunsetLightColorScheme() = lightColorScheme(
-        primary = TropicalCoral,
-        onPrimary = Color(0xFFFFFFFF),
-        primaryContainer = TropicalPeach,
+    // 🌸 SERENE LOTUS THEME 🌸
+    private fun sereneLotusLightColorScheme() = lightColorScheme(
+        primary = SereneLavender,
+        onPrimary = Color.White,
+        primaryContainer = SereneCream,
         onPrimaryContainer = Color(0xFF1A1A1A),
-        secondary = TropicalOrange,
-        onSecondary = Color(0xFFFFFFFF),
-        secondaryContainer = TropicalBlush,
+        secondary = SereneGreen,
+        onSecondary = Color.White,
+        secondaryContainer = SereneCream,
         onSecondaryContainer = Color(0xFF1A1A1A),
-        tertiary = TropicalPeach,
-        onTertiary = Color(0xFF1A1A1A),
-        tertiaryContainer = TropicalCream,
+        tertiary = SereneGold,
+        onTertiary = Color.White,
+        tertiaryContainer = SereneCream,
         onTertiaryContainer = Color(0xFF1A1A1A),
-        background = TropicalCream,  // 🌺 SEASHELL CREAM BACKGROUND
+        background = SereneCream,
         onBackground = Color(0xFF1A1A1A),
-        surface = TropicalCream,  // 🌺 MATCH BACKGROUND FOR CONSISTENCY
+        surface = SereneCream,
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = TropicalBlush,
-        onSurfaceVariant = TropicalOrange,
-        error = TropicalCoral
+        surfaceVariant = SereneGreen,
+        onSurfaceVariant = SereneLavender,
+        error = SereneGold
     )
 
-    private fun tropicalSunsetDarkColorScheme() = darkColorScheme(
-        primary = TropicalPeach,
-        onPrimary = Color(0xFF1A1A1A),
-        primaryContainer = TropicalCoral,
-        onPrimaryContainer = Color(0xFFE5E5E5),
-        secondary = TropicalBlush,
-        onSecondary = Color(0xFF1A1A1A),
-        secondaryContainer = TropicalOrange,
-        onSecondaryContainer = Color(0xFFE5E5E5),
-        tertiary = TropicalCream,
-        onTertiary = Color(0xFF1A1A1A),
-        tertiaryContainer = TropicalCoral,
-        onTertiaryContainer = Color(0xFFE5E5E5),
-        background = Color(0xFF2A1A0F),  // 🌺 DEEP SUNSET BACKGROUND
-        onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A1A0F),  // 🌺 MATCH BACKGROUND FOR CONSISTENCY
-        onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = TropicalCoral,
-        onSurfaceVariant = TropicalPeach,
-        error = TropicalOrange
+    private fun sereneLotusDarkColorScheme() = darkColorScheme(
+        primary = SereneGreen,
+        onPrimary = Color.Black,
+        primaryContainer = SereneMidnight,
+        onPrimaryContainer = Color.White,
+        secondary = SereneLavender,
+        onSecondary = Color.Black,
+        secondaryContainer = SereneMidnight,
+        onSecondaryContainer = Color.White,
+        tertiary = SereneGold,
+        onTertiary = Color.Black,
+        tertiaryContainer = SereneMidnight,
+        onTertiaryContainer = Color.White,
+        background = SereneMidnight,
+        onBackground = Color.White,
+        surface = SereneMidnight,
+        onSurface = Color.White,
+        surfaceVariant = SereneLavender,
+        onSurfaceVariant = SereneGreen,
+        error = SereneGold
     )
 
     // 🌙 TWILIGHT MYSTIQUE THEMES 🌙

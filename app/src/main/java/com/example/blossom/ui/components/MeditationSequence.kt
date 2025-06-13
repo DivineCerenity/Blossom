@@ -111,10 +111,10 @@ fun PreparationCountdown(
             )
         }
         
-        // Main countdown circle
+        // Main countdown circle (match timer size: 280.dp)
         Box(
             modifier = Modifier
-                .size(180.dp)
+                .size(280.dp)
                 .scale(pulseScale)
                 .clip(CircleShape)
                 .background(

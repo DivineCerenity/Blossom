@@ -27,8 +27,8 @@ import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 /**
- * 🎉 ACHIEVEMENT CELEBRATION POPUP
- * Epic confetti animation with achievement display
+ * 🎉 MILESTONE CELEBRATION POPUP
+ * Epic confetti animation with milestone display
  */
 @Composable
 fun AchievementCelebrationDialog(
@@ -67,7 +67,7 @@ fun AchievementCelebrationDialog(
                     ConfettiAnimation()
                 }
 
-                // 🏆 ACHIEVEMENT CARD
+                // 🏆 MILESTONE CARD
                 AnimatedVisibility(
                     visible = showDialog,
                     enter = scaleIn(
@@ -165,8 +165,8 @@ fun ConfettiPiece(
 }
 
 /**
- * 🏆 ACHIEVEMENT CARD
- * Main achievement display card
+ * 🏆 MILESTONE CARD
+ * Main milestone display card
  */
 @Composable
 fun AchievementCard(
@@ -211,7 +211,7 @@ fun AchievementCard(
             )
 
             Text(
-                text = if (achievements.size == 1) "Achievement Unlocked!" else "Achievements Unlocked!",
+                text = if (achievements.size == 1) "Milestone Unlocked!" else "Milestones Unlocked!",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -249,8 +249,8 @@ fun AchievementCard(
 }
 
 /**
- * 🏅 ACHIEVEMENT CELEBRATION ITEM
- * Individual achievement in the celebration popup
+ * 🏅 MILESTONE CELEBRATION ITEM
+ * Individual milestone in the celebration popup
  */
 @Composable
 fun AchievementCelebrationItem(achievement: Achievement) {

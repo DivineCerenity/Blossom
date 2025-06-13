@@ -89,7 +89,7 @@ fun SettingsScreen(
         }
     }
 
-    // 🏆 ACHIEVEMENT CELEBRATION
+    // 🏆 MILESTONE CELEBRATION
     if (newAchievements.isNotEmpty()) {
         AchievementCelebrationManager(
             achievements = newAchievements,
