@@ -29,7 +29,7 @@ object DatabaseModule {
             "blossom_database"
         )
         .fallbackToDestructiveMigration() // Allow destructive migration for all version changes
-        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7, BlossomDatabase.MIGRATION_7_8, BlossomDatabase.MIGRATION_8_9) // Add migrations including analytics
+        .addMigrations(BlossomDatabase.MIGRATION_1_2, BlossomDatabase.MIGRATION_2_3, BlossomDatabase.MIGRATION_3_4, BlossomDatabase.MIGRATION_4_5, BlossomDatabase.MIGRATION_5_6, BlossomDatabase.MIGRATION_6_7, BlossomDatabase.MIGRATION_7_8, BlossomDatabase.MIGRATION_8_9, BlossomDatabase.MIGRATION_9_10) // Add migrations including journal schema fix
         .build()
     }
 

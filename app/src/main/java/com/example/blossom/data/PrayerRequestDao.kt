@@ -40,5 +40,11 @@ interface PrayerRequestDao {
     fun getActivePrayerCount(): Flow<Int>
     
     @Query("SELECT COUNT(*) FROM prayer_requests WHERE isAnswered = 1")
-    fun getAnsweredPrayerCount(): Flow<Int>
+    fun getAnsweredPrayerCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM prayer_requests")
+    suspend fun getTotalPrayerCount(): Int
+
+    @Query("SELECT COUNT(*) FROM prayer_requests WHERE isAnswered = 1")
+    suspend fun getAnsweredPrayerCount(): Int
 }

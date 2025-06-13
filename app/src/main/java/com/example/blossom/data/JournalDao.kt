@@ -24,4 +24,7 @@ interface JournalDao {
 
     @Query("SELECT * FROM journal_entries WHERE id = :id")
     suspend fun getEntryById(id: Int): JournalEntry?
+
+    @Query("SELECT COUNT(*) FROM journal_entries")
+    suspend fun getEntryCount(): Int
 }

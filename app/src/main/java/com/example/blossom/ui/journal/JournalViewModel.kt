@@ -14,11 +14,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class JournalViewModel @Inject constructor(
-    private val journalDao: JournalDao
+    private val journalDao: JournalDao,
+    private val analyticsRepository: com.example.blossom.data.AnalyticsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditJournalUiState())
     val uiState: StateFlow<AddEditJournalUiState> = _uiState.asStateFlow()
+
+    // 🏆 ACHIEVEMENT STATE
+    private val _newAchievements = MutableStateFlow<List<com.example.blossom.data.Achievement>>(emptyList())
+    val newAchievements: StateFlow<List<com.example.blossom.data.Achievement>> = _newAchievements.asStateFlow()
 
     fun insertJournalEntry(title: String, content: String, mood: String, imageUrl: String?) {
         viewModelScope.launch {
@@ -139,7 +144,17 @@ class JournalViewModel @Inject constructor(
             )
 
             journalDao.insertJournalEntry(journalEntry)
-            _uiState.value = _uiState.value.copy(shouldNavigateBack = true)
+
+            // 🏆 CHECK FOR JOURNAL ACHIEVEMENTS!
+            val achievements = analyticsRepository.checkJournalAchievements()
+            if (achievements.isNotEmpty()) {
+                _newAchievements.value = achievements
+                // 🚨 DELAY NAVIGATION TO ALLOW ACHIEVEMENT POPUP TO SHOW!
+                // Navigation will be triggered when achievements are cleared
+            } else {
+                // No achievements - navigate immediately
+                _uiState.value = _uiState.value.copy(shouldNavigateBack = true)
+            }
         }
     }
 
@@ -173,5 +188,15 @@ class JournalViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * 🏆 CLEAR ACHIEVEMENTS
+     * Call this after showing achievement celebrations
+     */
+    fun clearAchievements() {
+        _newAchievements.value = emptyList()
+        // 🚨 NOW TRIGGER NAVIGATION AFTER ACHIEVEMENTS ARE DISMISSED!
+        _uiState.value = _uiState.value.copy(shouldNavigateBack = true)
     }
 }

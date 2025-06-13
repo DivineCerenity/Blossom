@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DailyAnalytics::class,
         Achievement::class
     ],
-    version = 9,  // 📊 INCREMENTED VERSION FOR NEW ANALYTICS
+    version = 10,  // 📊 INCREMENTED VERSION FOR JOURNAL SCHEMA FIX
     exportSchema = false
 )
 abstract class BlossomDatabase : RoomDatabase() {
@@ -158,6 +158,65 @@ abstract class BlossomDatabase : RoomDatabase() {
                         PRIMARY KEY(`id`)
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 📝 FIX JOURNAL ENTRIES TABLE SCHEMA
+                // Handle column differences between expected and found schema
+
+                // First, check if the problematic columns exist and handle them
+                try {
+                    // Remove columns that shouldn't be there
+                    database.execSQL("""
+                        CREATE TABLE IF NOT EXISTS `journal_entries_new` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `title` TEXT NOT NULL,
+                            `content` TEXT NOT NULL,
+                            `creationTimestamp` INTEGER NOT NULL,
+                            `mood` TEXT NOT NULL,
+                            `imageUrls` TEXT NOT NULL DEFAULT '',
+                            `featuredImageUrl` TEXT,
+                            `imageUrl` TEXT
+                        )
+                    """.trimIndent())
+
+                    // Copy data from old table to new table
+                    database.execSQL("""
+                        INSERT INTO journal_entries_new (id, title, content, creationTimestamp, mood, imageUrls, featuredImageUrl, imageUrl)
+                        SELECT
+                            id,
+                            title,
+                            content,
+                            creationTimestamp,
+                            mood,
+                            COALESCE(imageUrls, '') as imageUrls,
+                            featuredImageUrl,
+                            COALESCE(imageUri, imageUrl) as imageUrl
+                        FROM journal_entries
+                    """.trimIndent())
+
+                    // Drop old table and rename new one
+                    database.execSQL("DROP TABLE journal_entries")
+                    database.execSQL("ALTER TABLE journal_entries_new RENAME TO journal_entries")
+
+                } catch (e: Exception) {
+                    // If migration fails, just recreate the table
+                    database.execSQL("DROP TABLE IF EXISTS journal_entries")
+                    database.execSQL("""
+                        CREATE TABLE IF NOT EXISTS `journal_entries` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `title` TEXT NOT NULL,
+                            `content` TEXT NOT NULL,
+                            `creationTimestamp` INTEGER NOT NULL,
+                            `mood` TEXT NOT NULL,
+                            `imageUrls` TEXT NOT NULL DEFAULT '',
+                            `featuredImageUrl` TEXT,
+                            `imageUrl` TEXT
+                        )
+                    """.trimIndent())
+                }
             }
         }
     }

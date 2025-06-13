@@ -42,6 +42,6 @@ class PrayerRequestRepository @Inject constructor(
     fun getActivePrayerCount(): Flow<Int> = 
         prayerRequestDao.getActivePrayerCount()
     
-    fun getAnsweredPrayerCount(): Flow<Int> = 
-        prayerRequestDao.getAnsweredPrayerCount()
+    fun getAnsweredPrayerCount(): Flow<Int> =
+        prayerRequestDao.getAnsweredPrayerCountFlow()
 }

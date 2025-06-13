@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import com.example.blossom.ui.components.AchievementCelebrationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +37,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val newAchievements by viewModel.newAchievements.collectAsState()
 
     Scaffold(
         topBar = {
@@ -84,6 +87,16 @@ fun SettingsScreen(
                 AppInfoSection(onNavigateToAbout = onNavigateToAbout)
             }
         }
+    }
+
+    // 🏆 ACHIEVEMENT CELEBRATION
+    if (newAchievements.isNotEmpty()) {
+        AchievementCelebrationManager(
+            achievements = newAchievements,
+            onAllDismissed = {
+                viewModel.clearAchievements()
+            }
+        )
     }
 }
 

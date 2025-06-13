@@ -85,9 +85,9 @@ class InsightsViewModel @Inject constructor(
     }
     
     /**
-     * Record a meditation session for analytics
+     * Record a meditation session for analytics and return newly unlocked achievements
      */
-    fun recordMeditationSession(
+    suspend fun recordMeditationSession(
         startTime: Long,
         endTime: Long,
         duration: Int,
@@ -96,9 +96,40 @@ class InsightsViewModel @Inject constructor(
         backgroundSound: String?,
         theme: String,
         completed: Boolean
+    ): List<Achievement> {
+        val newAchievements = analyticsRepository.recordMeditationSession(
+            startTime = startTime,
+            endTime = endTime,
+            duration = duration,
+            breathingPattern = breathingPattern,
+            binauralBeat = binauralBeat,
+            backgroundSound = backgroundSound,
+            theme = theme,
+            completed = completed
+        )
+
+        // Refresh data after recording
+        loadAnalyticsData()
+
+        return newAchievements
+    }
+
+    /**
+     * Record a meditation session and handle achievements with callback
+     */
+    fun recordMeditationSessionWithAchievements(
+        startTime: Long,
+        endTime: Long,
+        duration: Int,
+        breathingPattern: String,
+        binauralBeat: String?,
+        backgroundSound: String?,
+        theme: String,
+        completed: Boolean,
+        onAchievementsUnlocked: (List<Achievement>) -> Unit
     ) {
         viewModelScope.launch {
-            analyticsRepository.recordMeditationSession(
+            val newAchievements = recordMeditationSession(
                 startTime = startTime,
                 endTime = endTime,
                 duration = duration,
@@ -108,9 +139,9 @@ class InsightsViewModel @Inject constructor(
                 theme = theme,
                 completed = completed
             )
-            
-            // Refresh data after recording
-            loadAnalyticsData()
+
+            // Call the callback with new achievements
+            onAchievementsUnlocked(newAchievements)
         }
     }
 }

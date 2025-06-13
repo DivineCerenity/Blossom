@@ -3,6 +3,7 @@ package com.example.blossom.ui.insights
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,7 @@ import com.example.blossom.data.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
+    onNavigateToAchievements: () -> Unit = {},
     viewModel: InsightsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -90,7 +92,10 @@ fun InsightsScreen(
                 visible = true,
                 enter = slideInVertically(animationSpec = tween(delayMillis = 300)) + fadeIn()
             ) {
-                AchievementSection(achievements = uiState.achievements)
+                AchievementSection(
+                    achievements = uiState.achievements,
+                    onViewAllAchievements = onNavigateToAchievements
+                )
             }
         }
         
@@ -427,12 +432,17 @@ fun WeeklyMeditationChart(weeklyData: WeeklyData) {
 
 /**
  * 🏆 ACHIEVEMENT SECTION
- * Display unlocked achievements
+ * Display unlocked achievements - CLICKABLE to view all
  */
 @Composable
-fun AchievementSection(achievements: List<Achievement>) {
+fun AchievementSection(
+    achievements: List<Achievement>,
+    onViewAllAchievements: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onViewAllAchievements() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
@@ -891,11 +901,16 @@ fun ResetStatsCard(
 
 /**
  * 📅 GET DAY LABEL
- * Convert date to day abbreviation
+ * Convert date to day abbreviation (Mon, Tue, etc.)
  */
 fun getDayLabel(date: String): String {
-    // Simple day extraction - could be enhanced
-    return when (date.takeLast(2)) {
-        else -> date.takeLast(2)
+    return try {
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val parsedDate = dateFormat.parse(date)
+        val dayFormat = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
+        dayFormat.format(parsedDate ?: return date.takeLast(2))
+    } catch (e: Exception) {
+        // Fallback to last 2 characters if parsing fails
+        date.takeLast(2)
     }
 }

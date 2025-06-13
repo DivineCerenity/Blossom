@@ -46,6 +46,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.blossom.ui.components.AchievementCelebrationManager
 import com.example.blossom.ui.dashboard.DashboardViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -58,6 +59,7 @@ fun PrayerRequestsScreen(
     // 📖 DAILY VERSE INTEGRATION
     val dashboardViewModel: DashboardViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val newAchievements by viewModel.newAchievements.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
@@ -68,6 +70,11 @@ fun PrayerRequestsScreen(
             showAddDialog = true
             onAddPrayerTriggered()
         }
+    }
+
+    // 📖 REFRESH VERSE WHEN SCREEN BECOMES VISIBLE
+    LaunchedEffect(Unit) {
+        dashboardViewModel.fetchVerse()
     }
     
     var selectedSortOption by remember { mutableStateOf(PrayerSortOption.NEWEST_FIRST) }
@@ -390,6 +397,16 @@ fun PrayerRequestsScreen(
             onDismiss = {
                 showActionBottomSheet = false
                 selectedPrayerForAction = null
+            }
+        )
+    }
+
+    // 🏆 ACHIEVEMENT CELEBRATION
+    if (newAchievements.isNotEmpty()) {
+        AchievementCelebrationManager(
+            achievements = newAchievements,
+            onAllDismissed = {
+                viewModel.clearAchievements()
             }
         )
     }

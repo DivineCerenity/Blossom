@@ -78,6 +78,28 @@ interface AnalyticsDao {
         LIMIT 1
     """)
     suspend fun getFavoriteTheme(): String?
+
+    // 🎨 EXPLORATION TRACKING - COUNT UNIQUE OPTIONS USED
+    @Query("""
+        SELECT COUNT(DISTINCT breathingPattern)
+        FROM meditation_sessions
+        WHERE completed = 1 AND breathingPattern != 'None'
+    """)
+    suspend fun getUniqueBreathingPatterns(): Int
+
+    @Query("""
+        SELECT COUNT(DISTINCT binauralBeat)
+        FROM meditation_sessions
+        WHERE completed = 1 AND binauralBeat IS NOT NULL
+    """)
+    suspend fun getUniqueBinauralBeats(): Int
+
+    @Query("""
+        SELECT COUNT(DISTINCT theme)
+        FROM meditation_sessions
+        WHERE completed = 1
+    """)
+    suspend fun getUniqueThemes(): Int
     
     // 📅 WEEKLY DATA (INCLUDING ALL SESSIONS)
     @Query("""
@@ -112,6 +134,9 @@ interface AnalyticsDao {
     
     @Query("SELECT * FROM achievements WHERE unlockedAt IS NOT NULL ORDER BY unlockedAt DESC")
     fun getUnlockedAchievements(): Flow<List<Achievement>>
+
+    @Query("SELECT * FROM achievements WHERE id = :achievementId")
+    suspend fun getAchievementById(achievementId: String): Achievement?
     
     @Query("SELECT * FROM achievements WHERE unlockedAt IS NULL")
     fun getLockedAchievements(): Flow<List<Achievement>>

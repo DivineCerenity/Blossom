@@ -34,6 +34,7 @@ import com.example.blossom.ui.journal.AddEditJournalScreen
 import com.example.blossom.ui.journal.JournalListScreen
 import com.example.blossom.ui.journal.JournalListViewModel
 import com.example.blossom.ui.journal.JournalViewModel
+import com.example.blossom.ui.components.AchievementCelebrationManager
 import com.example.blossom.ui.checklist.ChecklistScreen
 import com.example.blossom.ui.insights.InsightsScreen
 import com.example.blossom.ui.meditate.MeditateScreen
@@ -167,7 +168,9 @@ fun BlossomApp(
                 ChecklistScreen()
             }
             composable(Screen.Insights.route) {
-                InsightsScreen()  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
+                InsightsScreen(
+                    onNavigateToAchievements = { navController.navigate("achievements") }
+                )  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
             }
             composable(Screen.Prayers.route) {
                 PrayerRequestsScreen(
@@ -191,6 +194,12 @@ fun BlossomApp(
                 AboutScreen(
                     onNavigateBack = { navController.popBackStack() },
                     selectedTheme = selectedTheme
+                )
+            }
+
+            composable("achievements") {
+                com.example.blossom.ui.achievements.AchievementsScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
@@ -227,6 +236,8 @@ fun BlossomApp(
                     }
                 }
 
+                val newAchievements by viewModel.newAchievements.collectAsState()
+
                 AddEditJournalScreen(
                     uiState = viewModel.uiState.collectAsState().value,
                     onTitleChanged = viewModel::onTitleChanged,
@@ -241,6 +252,16 @@ fun BlossomApp(
                     onNavigateBack = { navController.popBackStack() },
                     isEditing = entryId != -1
                 )
+
+                // 🏆 ACHIEVEMENT CELEBRATION
+                if (newAchievements.isNotEmpty()) {
+                    AchievementCelebrationManager(
+                        achievements = newAchievements,
+                        onAllDismissed = {
+                            viewModel.clearAchievements()
+                        }
+                    )
+                }
             }
         }
     }

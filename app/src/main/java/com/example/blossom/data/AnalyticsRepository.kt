@@ -1,5 +1,7 @@
 package com.example.blossom.data
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
@@ -15,7 +17,8 @@ import javax.inject.Singleton
 class AnalyticsRepository @Inject constructor(
     private val analyticsDao: AnalyticsDao,
     private val journalDao: JournalDao,
-    private val prayerDao: PrayerRequestDao
+    private val prayerDao: PrayerRequestDao,
+    @ApplicationContext private val context: Context
 ) {
     
     // 🧘‍♂️ MEDITATION SESSION TRACKING
@@ -28,7 +31,7 @@ class AnalyticsRepository @Inject constructor(
         backgroundSound: String?,
         theme: String,
         completed: Boolean
-    ) {
+    ): List<Achievement> {
         val session = MeditationSession(
             startTime = startTime,
             endTime = endTime,
@@ -39,14 +42,14 @@ class AnalyticsRepository @Inject constructor(
             theme = theme,
             completed = completed
         )
-        
+
         analyticsDao.insertMeditationSession(session)
-        
+
         // Update daily analytics
         updateDailyAnalytics(Date(startTime))
-        
-        // Check for achievement unlocks
-        checkAchievements()
+
+        // 🎉 CHECK FOR ACHIEVEMENT UNLOCKS AND RETURN NEW ONES!
+        return checkAchievements()
     }
     
     // 📈 GET MEDITATION STATISTICS
@@ -209,63 +212,81 @@ class AnalyticsRepository @Inject constructor(
         analyticsDao.insertOrUpdateDailyAnalytics(analytics)
     }
     
-    private suspend fun checkAchievements() {
+    /**
+     * 🎉 CHECK ACHIEVEMENTS AND RETURN NEWLY UNLOCKED ONES
+     * Returns list of achievements that were just unlocked
+     */
+    suspend fun checkAchievements(): List<Achievement> {
         val stats = getMeditationStats()
-        val journalInsights = getJournalInsights()
-        val prayerInsights = getPrayerInsights()
+        val newlyUnlocked = mutableListOf<Achievement>()
 
         // 🧘‍♂️ MEDITATION COUNT ACHIEVEMENTS
-        checkAndUnlock("first_meditation", stats.totalSessions >= 1)
-        checkAndUnlock("meditation_explorer", stats.totalSessions >= 5)
-        checkAndUnlock("meditation_enthusiast", stats.totalSessions >= 10)
-        checkAndUnlock("meditation_devotee", stats.totalSessions >= 25)
-        checkAndUnlock("meditation_master", stats.totalSessions >= 50)
-        checkAndUnlock("zen_master", stats.totalSessions >= 100)
-        checkAndUnlock("enlightened_soul", stats.totalSessions >= 250)
-        checkAndUnlock("meditation_legend", stats.totalSessions >= 500)
+        newlyUnlocked.addAll(checkAndUnlock("first_meditation", stats.totalSessions >= 1))
+        newlyUnlocked.addAll(checkAndUnlock("meditation_explorer", stats.totalSessions >= 5))
+        newlyUnlocked.addAll(checkAndUnlock("meditation_enthusiast", stats.totalSessions >= 10))
+        newlyUnlocked.addAll(checkAndUnlock("meditation_devotee", stats.totalSessions >= 25))
+        newlyUnlocked.addAll(checkAndUnlock("meditation_master", stats.totalSessions >= 50))
+        newlyUnlocked.addAll(checkAndUnlock("zen_master", stats.totalSessions >= 100))
+        newlyUnlocked.addAll(checkAndUnlock("enlightened_soul", stats.totalSessions >= 250))
+        newlyUnlocked.addAll(checkAndUnlock("meditation_legend", stats.totalSessions >= 500))
 
         // 🔥 MEDITATION STREAK ACHIEVEMENTS
-        checkAndUnlock("streak_starter", stats.currentStreak >= 3)
-        checkAndUnlock("week_warrior", stats.currentStreak >= 7)
-        checkAndUnlock("fortnight_fighter", stats.currentStreak >= 14)
-        checkAndUnlock("month_master", stats.currentStreak >= 30)
-        checkAndUnlock("season_sage", stats.currentStreak >= 90)
-        checkAndUnlock("year_yogi", stats.currentStreak >= 365)
+        newlyUnlocked.addAll(checkAndUnlock("streak_starter", stats.currentStreak >= 3))
+        newlyUnlocked.addAll(checkAndUnlock("week_warrior", stats.currentStreak >= 7))
+        newlyUnlocked.addAll(checkAndUnlock("fortnight_fighter", stats.currentStreak >= 14))
+        newlyUnlocked.addAll(checkAndUnlock("month_master", stats.currentStreak >= 30))
+        newlyUnlocked.addAll(checkAndUnlock("season_sage", stats.currentStreak >= 90))
+        newlyUnlocked.addAll(checkAndUnlock("year_yogi", stats.currentStreak >= 365))
 
         // ⏰ MEDITATION TIME ACHIEVEMENTS (in minutes)
         val totalMinutes = stats.totalTime / 60
-        checkAndUnlock("first_hour", totalMinutes >= 60)
-        checkAndUnlock("time_traveler", totalMinutes >= 300) // 5 hours
-        checkAndUnlock("mindful_marathon", totalMinutes >= 600) // 10 hours
-        checkAndUnlock("zen_zone", totalMinutes >= 1200) // 20 hours
-        checkAndUnlock("meditation_mountain", totalMinutes >= 3000) // 50 hours
-        checkAndUnlock("enlightenment_peak", totalMinutes >= 6000) // 100 hours
+        newlyUnlocked.addAll(checkAndUnlock("first_hour", totalMinutes >= 60))
+        newlyUnlocked.addAll(checkAndUnlock("time_traveler", totalMinutes >= 300)) // 5 hours
+        newlyUnlocked.addAll(checkAndUnlock("mindful_marathon", totalMinutes >= 600)) // 10 hours
+        newlyUnlocked.addAll(checkAndUnlock("zen_zone", totalMinutes >= 1200)) // 20 hours
+        newlyUnlocked.addAll(checkAndUnlock("meditation_mountain", totalMinutes >= 3000)) // 50 hours
+        newlyUnlocked.addAll(checkAndUnlock("enlightenment_peak", totalMinutes >= 6000)) // 100 hours
 
-        // 📝 JOURNAL ACHIEVEMENTS
-        checkAndUnlock("first_thoughts", journalInsights.totalEntries >= 1)
-        checkAndUnlock("storyteller", journalInsights.totalEntries >= 10)
-        checkAndUnlock("memory_keeper", journalInsights.totalEntries >= 25)
-        checkAndUnlock("life_chronicler", journalInsights.totalEntries >= 50)
-        checkAndUnlock("wisdom_writer", journalInsights.totalEntries >= 100)
+        // 🚨 JOURNAL & PRAYER ACHIEVEMENTS REMOVED FROM HERE!
+        // They now only trigger in their respective checkJournalAchievements() and checkPrayerAchievements() methods
 
-        // 🙏 PRAYER ACHIEVEMENTS
-        checkAndUnlock("first_prayer", prayerInsights.totalPrayers >= 1)
-        checkAndUnlock("faithful_heart", prayerInsights.totalPrayers >= 10)
-        checkAndUnlock("prayer_warrior", prayerInsights.totalPrayers >= 25)
-        checkAndUnlock("spiritual_guardian", prayerInsights.totalPrayers >= 50)
-        checkAndUnlock("divine_messenger", prayerInsights.answeredPrayers >= 5)
-        checkAndUnlock("miracle_witness", prayerInsights.answeredPrayers >= 10)
+        // 🎨 MEDITATION EXPLORATION ACHIEVEMENTS - PATTERNS & BEATS ONLY!
+        val uniquePatterns = analyticsDao.getUniqueBreathingPatterns()
+        val uniqueBinauralBeats = analyticsDao.getUniqueBinauralBeats()
 
-        // 🎨 EXPLORATION ACHIEVEMENTS
-        checkAndUnlock("pattern_explorer", stats.favoritePattern != null)
-        checkAndUnlock("frequency_finder", stats.favoriteBinauralBeat != null)
-        checkAndUnlock("theme_wanderer", stats.favoriteTheme != null)
+        // 🌬️ BREATHING PATTERN ACHIEVEMENT
+        newlyUnlocked.addAll(checkAndUnlock("pattern_explorer", uniquePatterns >= 2))
+
+        // 🎵 BINAURAL BEATS ACHIEVEMENT
+        newlyUnlocked.addAll(checkAndUnlock("frequency_finder", uniqueBinauralBeats >= 2))
+
+        // 🚨 THEME ACHIEVEMENTS MOVED TO SETTINGS - NO LONGER CHECKED HERE!
+
+        return newlyUnlocked
     }
 
-    private suspend fun checkAndUnlock(achievementId: String, condition: Boolean) {
+    /**
+     * 🏆 CHECK AND UNLOCK ACHIEVEMENT
+     * Returns the newly unlocked achievement if it was just unlocked, empty list otherwise
+     */
+    private suspend fun checkAndUnlock(achievementId: String, condition: Boolean): List<Achievement> {
         if (condition) {
-            analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+            // Check if already unlocked
+            val achievement = analyticsDao.getAchievementById(achievementId)
+
+            if (achievement != null && achievement.unlockedAt == null) {
+                // This is a new unlock!
+                analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+
+                // Get the updated achievement with unlock time
+                val updatedAchievement = analyticsDao.getAchievementById(achievementId)
+                return if (updatedAchievement != null) listOf(updatedAchievement) else emptyList()
+            } else {
+                // Already unlocked or doesn't exist
+                analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+            }
         }
+        return emptyList()
     }
 
     /**
@@ -322,10 +343,126 @@ class AnalyticsRepository @Inject constructor(
         )
 
         achievements.forEach { achievement ->
-            analyticsDao.insertOrUpdateAchievement(achievement)
+            // 🏆 ONLY INSERT IF ACHIEVEMENT DOESN'T EXIST (preserve unlock status)
+            val existing = analyticsDao.getAchievementById(achievement.id)
+            if (existing == null) {
+                analyticsDao.insertOrUpdateAchievement(achievement)
+            }
         }
     }
-    
+
+    /**
+     * 📝 CHECK JOURNAL ACHIEVEMENTS
+     * Call this when a journal entry is created
+     */
+    suspend fun checkJournalAchievements(): List<Achievement> {
+        val journalCount = journalDao.getEntryCount()
+        val newAchievements = mutableListOf<Achievement>()
+
+        // 🏆 FIXED ACHIEVEMENT IDs TO MATCH INITIALIZATION!
+        val journalAchievements = listOf(
+            "first_thoughts" to 1,
+            "storyteller" to 10,
+            "memory_keeper" to 25,
+            "life_chronicler" to 50,
+            "wisdom_writer" to 100
+        )
+
+        journalAchievements.forEach { (achievementId, threshold) ->
+            if (journalCount >= threshold) {
+                val achievement = analyticsDao.getAchievementById(achievementId)
+                if (achievement?.unlockedAt == null) {
+                    analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+                    val unlockedAchievement = analyticsDao.getAchievementById(achievementId)
+                    unlockedAchievement?.let { newAchievements.add(it) }
+                }
+            }
+        }
+
+        return newAchievements
+    }
+
+    /**
+     * 🙏 CHECK PRAYER ACHIEVEMENTS
+     * Call this when a prayer request is created
+     */
+    suspend fun checkPrayerAchievements(): List<Achievement> {
+        val prayerCount = prayerDao.getTotalPrayerCount()
+        val answeredCount = prayerDao.getAnsweredPrayerCount()
+        val newAchievements = mutableListOf<Achievement>()
+
+        // 🏆 FIXED ACHIEVEMENT IDs TO MATCH INITIALIZATION!
+        val prayerAchievements = listOf(
+            "first_prayer" to 1,
+            "faithful_heart" to 10,
+            "prayer_warrior" to 25,
+            "spiritual_guardian" to 50
+        )
+
+        prayerAchievements.forEach { (achievementId, threshold) ->
+            if (prayerCount >= threshold) {
+                val achievement = analyticsDao.getAchievementById(achievementId)
+                if (achievement?.unlockedAt == null) {
+                    analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+                    val unlockedAchievement = analyticsDao.getAchievementById(achievementId)
+                    unlockedAchievement?.let { newAchievements.add(it) }
+                }
+            }
+        }
+
+        // 🏆 FIXED ANSWERED PRAYER ACHIEVEMENT IDs!
+        val answeredAchievements = listOf(
+            "divine_messenger" to 5,
+            "miracle_witness" to 10
+        )
+
+        answeredAchievements.forEach { (achievementId, threshold) ->
+            if (answeredCount >= threshold) {
+                val achievement = analyticsDao.getAchievementById(achievementId)
+                if (achievement?.unlockedAt == null) {
+                    analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+                    val unlockedAchievement = analyticsDao.getAchievementById(achievementId)
+                    unlockedAchievement?.let { newAchievements.add(it) }
+                }
+            }
+        }
+
+        return newAchievements
+    }
+
+    /**
+     * 🎨 RECORD THEME CHANGE AND CHECK ACHIEVEMENTS
+     * Call this when a theme is changed in settings
+     */
+    suspend fun recordThemeChange(themeName: String): List<Achievement> {
+        // Record the theme change in a special table or shared preferences
+        val sharedPrefs = context.getSharedPreferences("theme_tracking", Context.MODE_PRIVATE)
+        val usedThemes = sharedPrefs.getStringSet("used_themes", mutableSetOf()) ?: mutableSetOf()
+
+        // Add the new theme to the set
+        val updatedThemes = usedThemes.toMutableSet()
+        updatedThemes.add(themeName)
+
+        // Save back to preferences
+        sharedPrefs.edit()
+            .putStringSet("used_themes", updatedThemes)
+            .apply()
+
+        val newAchievements = mutableListOf<Achievement>()
+
+        // Only unlock if user has tried 2+ different themes
+        if (updatedThemes.size >= 2) {
+            val achievement = analyticsDao.getAchievementById("theme_wanderer")
+            if (achievement?.unlockedAt == null) {
+                analyticsDao.unlockAchievement("theme_wanderer", System.currentTimeMillis())
+                val unlockedAchievement = analyticsDao.getAchievementById("theme_wanderer")
+                unlockedAchievement?.let { newAchievements.add(it) }
+            }
+        }
+
+        return newAchievements
+    }
+
     private fun createMoodTrends(entries: List<JournalEntry>): List<MoodTrendData> {
         // Simplified mood trends for last 7 days
         return emptyList() // TODO: Implement detailed mood trends

@@ -56,10 +56,12 @@ import com.example.blossom.ui.components.PreparationCountdown
 import com.example.blossom.ui.components.CompletionCelebration
 import com.example.blossom.ui.components.MeditationBottomSheet
 import com.example.blossom.ui.components.MeditationSettings
+import com.example.blossom.ui.components.AchievementCelebrationDialog
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Air
 import com.example.blossom.ui.insights.InsightsViewModel
+import com.example.blossom.data.Achievement
 
 @Composable
 fun MeditateScreen() {
@@ -84,6 +86,10 @@ fun MeditateScreen() {
     // 📊 ANALYTICS TRACKING VARIABLES
     var sessionStartTime by remember { mutableLongStateOf(0L) }
     var sessionEndTime by remember { mutableLongStateOf(0L) }
+
+    // 🎉 ACHIEVEMENT CELEBRATION STATE
+    var newAchievements by remember { mutableStateOf<List<Achievement>>(emptyList()) }
+    var showAchievementCelebration by remember { mutableStateOf(false) }
 
     // Audio state
     val audioState by viewModel.audioState.collectAsStateWithLifecycle()
@@ -180,7 +186,8 @@ fun MeditateScreen() {
                 sessionEndTime = System.currentTimeMillis()
                 val actualDuration = (sessionEndTime - sessionStartTime) / 1000 // Convert to seconds
 
-                insightsViewModel.recordMeditationSession(
+                // 🎉 RECORD SESSION (achievements will be checked in ViewModel)
+                insightsViewModel.recordMeditationSessionWithAchievements(
                     startTime = sessionStartTime,
                     endTime = sessionEndTime,
                     duration = actualDuration.toInt(),
@@ -189,7 +196,13 @@ fun MeditateScreen() {
                     binauralBeat = meditationSettings.selectedBinauralBeat?.name,
                     backgroundSound = meditationSettings.selectedSound?.name,
                     theme = settingsUiState.selectedTheme.displayName, // 🎨 ACTUAL THEME NAME!
-                    completed = true
+                    completed = true,
+                    onAchievementsUnlocked = { achievements ->
+                        if (achievements.isNotEmpty()) {
+                            newAchievements = achievements
+                            showAchievementCelebration = true
+                        }
+                    }
                 )
 
                 // 🎉 SHOW COMPLETION DIALOG INSTEAD OF OVERLAY
@@ -347,7 +360,8 @@ fun MeditateScreen() {
 
                                 android.util.Log.d("MeditationTracking", "Session details - Breathing: $breathingPattern, Binaural: $binauralBeat, Sound: $backgroundSound, Theme: $theme")
 
-                                insightsViewModel.recordMeditationSession(
+                                // 🎉 RECORD SESSION AND CHECK FOR ACHIEVEMENTS!
+                                insightsViewModel.recordMeditationSessionWithAchievements(
                                     startTime = sessionStartTime,
                                     endTime = sessionEndTime,
                                     duration = actualDuration.toInt(),
@@ -355,7 +369,13 @@ fun MeditateScreen() {
                                     binauralBeat = binauralBeat,
                                     backgroundSound = backgroundSound,
                                     theme = theme,
-                                    completed = false // Manually stopped
+                                    completed = false, // Manually stopped
+                                    onAchievementsUnlocked = { achievements ->
+                                        if (achievements.isNotEmpty()) {
+                                            newAchievements = achievements
+                                            showAchievementCelebration = true
+                                        }
+                                    }
                                 )
 
                                 // 📊 REFRESH ANALYTICS IMMEDIATELY
@@ -460,6 +480,17 @@ fun MeditateScreen() {
                     sessionEndTime = 0L
                     // 📊 REFRESH ANALYTICS IMMEDIATELY
                     insightsViewModel.refreshData()
+                }
+            )
+        }
+
+        // 🎉 ACHIEVEMENT CELEBRATION POPUP WITH CONFETTI!
+        if (showAchievementCelebration && newAchievements.isNotEmpty()) {
+            AchievementCelebrationDialog(
+                achievements = newAchievements,
+                onDismiss = {
+                    showAchievementCelebration = false
+                    newAchievements = emptyList()
                 }
             )
         }

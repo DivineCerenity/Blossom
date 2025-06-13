@@ -26,15 +26,53 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var lastFetchDate: String? = null
+
     init {
         fetchVerse()
     }
 
     fun fetchVerse() {
         viewModelScope.launch {
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+
+            // 🔄 ALWAYS CHECK IF WE NEED A NEW VERSE FOR TODAY
+            if (lastFetchDate != today) {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                dailyVerseRepository.getTodaysVerse()
+                    .onSuccess { dailyVerse ->
+                        lastFetchDate = today
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                verseText = dailyVerse.verse,
+                                verseReference = dailyVerse.reference
+                            )
+                        }
+                    }
+                    .onFailure {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Failed to load verse. Please check your connection."
+                            )
+                        }
+                    }
+            }
+        }
+    }
+
+    /**
+     * 🔄 FORCE REFRESH TODAY'S VERSE
+     * Call this when user wants to get a fresh verse
+     */
+    fun refreshVerse() {
+        viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            dailyVerseRepository.getTodaysVerse()
+            dailyVerseRepository.refreshTodaysVerse()
                 .onSuccess { dailyVerse ->
+                    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                    lastFetchDate = today
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -47,7 +85,7 @@ class DashboardViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = "Failed to load verse. Please check your connection."
+                            error = "Failed to refresh verse. Please check your connection."
                         )
                     }
                 }
