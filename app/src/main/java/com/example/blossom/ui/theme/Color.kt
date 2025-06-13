@@ -70,6 +70,41 @@ val SakuraRose = Color(0xFFD4A5A5)         // Muted dusty rose
 val SakuraCream = Color(0xFFFAF0E6)        // Warm cream
 val SakuraSage = Color(0xFFB8C5B1)         // Soft sage green
 
+// 🌊 OCEAN DEPTHS THEME 🌊 (Deep Mysterious Waters)
+val OceanDeepTeal = Color(0xFF1B4D4D)       // Deep ocean teal
+val OceanMidTeal = Color(0xFF2E7D7D)        // Medium teal
+val OceanSeafoam = Color(0xFF7FB3B3)        // Seafoam green
+val OceanMist = Color(0xFFB8E6E6)           // Light ocean mist
+val OceanPearl = Color(0xFFE6F7F7)          // Pearl white
+
+// ✨ GOLDEN HOUR THEME ✨ (Radiant Sunset Glow)
+val GoldenDeep = Color(0xFFB8860B)          // Deep gold
+val GoldenWarm = Color(0xFFDAA520)          // Warm gold
+val GoldenPeach = Color(0xFFFFB07A)         // Soft peach
+val GoldenCream = Color(0xFFFFF8DC)         // Golden cream
+val GoldenBlush = Color(0xFFFFE4E1)         // Soft blush
+
+// 🌙 MOONLIT GARDEN THEME 🌙 (Ethereal Night Beauty)
+val MoonlitSilver = Color(0xFF708090)       // Silver blue
+val MoonlitBlue = Color(0xFF9BB5D1)         // Soft blue
+val MoonlitLavender = Color(0xFFB8A9DC)     // Gentle lavender
+val MoonlitMist = Color(0xFFE6E6FA)         // Lavender mist
+val MoonlitPearl = Color(0xFFF8F8FF)        // Ghost white
+
+// 🌿 FOREST WHISPER THEME 🌿 (Deep Nature Harmony)
+val ForestDeepGreen = Color(0xFF2F4F2F)     // Deep forest green
+val ForestEmerald = Color(0xFF50C878)       // Emerald green
+val ForestSage = Color(0xFF87A96B)          // Forest sage
+val ForestMoss = Color(0xFFADDFAD)          // Soft moss
+val ForestMint = Color(0xFFE0FFE0)          // Light mint
+
+// 🌺 TROPICAL SUNSET THEME 🌺 (Vibrant Paradise)
+val TropicalCoral = Color(0xFFFF6B6B)       // Vibrant coral
+val TropicalPeach = Color(0xFFFFB347)       // Warm peach
+val TropicalOrange = Color(0xFFFF8C42)      // Sunset orange
+val TropicalCream = Color(0xFFFFF5EE)       // Seashell cream
+val TropicalBlush = Color(0xFFFFE4E1)       // Soft blush
+
 // 🌙 TWILIGHT MYSTIQUE THEME 🌙 (Your Custom Palette 5)
 val TwilightPurple = Color(0xFF483952)     // Deep purple
 val TwilightMauve = Color(0xFF736275)      // Soft mauve

@@ -29,7 +29,7 @@ fun GradientText(
         AppTheme.AUTUMN_HARVEST -> listOf(
             AutumnTerracotta,   // Rich terracotta
             AutumnTeal,         // Beautiful teal
-            AutumnDarkGreen     // Deep forest green
+            AutumnSageGreen     // Light sage green (better contrast in dark mode)
         )
         AppTheme.AURORA_DREAMS -> listOf(
             AuroraDeepPurple,   // Deep cosmic purple
@@ -40,6 +40,31 @@ fun GradientText(
             SakuraBlush,        // Gentle blush pink
             SakuraRose,         // Muted dusty rose
             SakuraSage          // Soft sage green
+        )
+        AppTheme.OCEAN_DEPTHS -> listOf(
+            OceanDeepTeal,      // Deep ocean teal
+            OceanMidTeal,       // Medium teal
+            OceanSeafoam        // Seafoam green
+        )
+        AppTheme.GOLDEN_HOUR -> listOf(
+            GoldenDeep,         // Deep gold
+            GoldenWarm,         // Warm gold
+            GoldenPeach         // Soft peach
+        )
+        AppTheme.MOONLIT_GARDEN -> listOf(
+            MoonlitSilver,      // Silver blue
+            MoonlitBlue,        // Soft blue
+            MoonlitLavender     // Gentle lavender
+        )
+        AppTheme.FOREST_WHISPER -> listOf(
+            ForestDeepGreen,    // Deep forest green
+            ForestEmerald,      // Emerald green
+            ForestSage          // Forest sage
+        )
+        AppTheme.TROPICAL_SUNSET -> listOf(
+            TropicalCoral,      // Vibrant coral
+            TropicalOrange,     // Sunset orange
+            TropicalPeach       // Warm peach
         )
         AppTheme.TWILIGHT_MYSTIQUE -> listOf(
             TwilightPurple,     // Deep purple
