@@ -38,9 +38,9 @@ val PeacefulColor = Color(0xFF8B7CF6)  // Matches primary lavender
 
 // Prayer priority colors - Distinct colors for each priority
 val PriorityLow = Color(0xFF10B981)     // Sage green
-val PriorityMedium = Color(0xFFD1A95F)  // Warm golden
-val PriorityHigh = Color(0xFFEF4444)    // Bright red
-val PriorityUrgent = Color(0xFF8F342A)  // Deep terracotta
+val PriorityMedium = Color(0xFFFFD700)  // Bright yellow (changed from golden)
+val PriorityHigh = Color(0xFFFF8C00)    // Orange (changed from red)
+val PriorityUrgent = Color(0xFFEF4444)  // Red (changed from terracotta)
 
 // 🌊 COASTAL SERENITY THEME 🌊 (Your Custom Palette 1)
 val CoastalBlueGray = Color(0xFF597C8A)    // Sophisticated blue-gray
@@ -56,19 +56,19 @@ val AutumnLimeGreen = Color(0xFFC9D9A0)    // Soft lime green
 val AutumnTeal = Color(0xFF69B091)         // Beautiful teal
 val AutumnDarkGreen = Color(0xFF223130)    // Deep forest green
 
-// 🌿 MEADOW DREAMS THEME 🌿 (Your Custom Palette 3)
-val MeadowLime = Color(0xFFD3D565)         // Vibrant lime
-val MeadowSage = Color(0xFF95B684)         // Medium sage
-val MeadowForest = Color(0xFF61876F)       // Forest green
-val MeadowTeal = Color(0xFF3E6C67)         // Deep teal
-val MeadowNavy = Color(0xFF223747)         // Deep navy
+// 🌌 AURORA DREAMS THEME 🌌 (Magical Northern Lights)
+val AuroraDeepPurple = Color(0xFF4C1D95)   // Deep cosmic purple
+val AuroraMidPurple = Color(0xFF7C3AED)    // Vibrant purple
+val AuroraLavender = Color(0xFFA78BFA)     // Soft lavender
+val AuroraMint = Color(0xFF6EE7B7)         // Ethereal mint
+val AuroraTeal = Color(0xFF14B8A6)         // Aurora teal
 
-// 🌵 DESERT BLOOM THEME 🌵 (Your Custom Palette 4)
-val DesertSage = Color(0xFF445C5E)         // Sage gray-green
-val DesertMint = Color(0xFF7FA28E)         // Soft mint green
-val DesertCream = Color(0xFFF1E2D3)        // Warm cream
-val DesertGold = Color(0xFFD3C357)         // Rich gold
-val DesertCoral = Color(0xFFC66759)        // Warm coral
+// 🌸 SAKURA WHISPER THEME 🌸 (Gentle Cherry Blossom Beauty)
+val SakuraSoftPink = Color(0xFFF8BBD9)     // Soft cherry blossom pink
+val SakuraBlush = Color(0xFFE8A5C8)        // Gentle blush pink
+val SakuraRose = Color(0xFFD4A5A5)         // Muted dusty rose
+val SakuraCream = Color(0xFFFAF0E6)        // Warm cream
+val SakuraSage = Color(0xFFB8C5B1)         // Soft sage green
 
 // 🌙 TWILIGHT MYSTIQUE THEME 🌙 (Your Custom Palette 5)
 val TwilightPurple = Color(0xFF483952)     // Deep purple

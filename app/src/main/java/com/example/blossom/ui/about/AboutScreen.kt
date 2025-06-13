@@ -264,7 +264,7 @@ private fun FeaturesSection() {
 private fun CollaborationSection() {
     SectionCard(
         title = "💜 A Beautiful Collaboration",
-        icon = Icons.Default.Handshake
+        icon = null
     ) {
         Text(
             text = "This app represents the perfect harmony between human vision and AI capability. Jonathon's creative direction, attention to detail, and perfectionist approach combined with AI's technical implementation created something neither could achieve alone.",

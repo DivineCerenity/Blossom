@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -30,15 +31,15 @@ fun GradientText(
             AutumnTeal,         // Beautiful teal
             AutumnDarkGreen     // Deep forest green
         )
-        AppTheme.MEADOW_DREAMS -> listOf(
-            MeadowLime,         // Vibrant lime
-            MeadowForest,       // Forest green
-            MeadowNavy          // Deep navy
+        AppTheme.AURORA_DREAMS -> listOf(
+            AuroraDeepPurple,   // Deep cosmic purple
+            AuroraMidPurple,    // Vibrant purple
+            AuroraMint          // Ethereal mint
         )
-        AppTheme.DESERT_BLOOM -> listOf(
-            DesertGold,         // Rich gold
-            DesertCoral,        // Warm coral
-            DesertSage          // Sage gray-green
+        AppTheme.SAKURA_WHISPER -> listOf(
+            SakuraBlush,        // Gentle blush pink
+            SakuraRose,         // Muted dusty rose
+            SakuraSage          // Soft sage green
         )
         AppTheme.TWILIGHT_MYSTIQUE -> listOf(
             TwilightPurple,     // Deep purple
@@ -51,8 +52,13 @@ fun GradientText(
         text = text,
         modifier = modifier,
         style = TextStyle(
-            // 🌟 PREMIUM STYLING - THEME-AWARE GRADIENT! 🌟
-            brush = Brush.linearGradient(colors = gradientColors),
+            // 🌟 PREMIUM STYLING - PERFECT GRADIENT POSITIONING! 🌟
+            // For "Blossom" - start gradient transition on first 'S' (position ~0.3)
+            brush = Brush.linearGradient(
+                colors = gradientColors,
+                start = Offset(0.3f, 0f),  // Start gradient at first 'S'
+                end = Offset(1.0f, 0f)     // End at the end of text
+            ),
             fontFamily = Marcellus,
             fontSize = 40.sp // Large, but fits well in the app bar
         )

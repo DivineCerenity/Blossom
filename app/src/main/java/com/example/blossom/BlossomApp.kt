@@ -169,7 +169,7 @@ fun BlossomApp(
             }
             composable(Screen.Insights.route) {
                 InsightsScreen(
-                    onNavigateToAchievements = { navController.navigate("achievements") }
+                    onNavigateToMilestones = { navController.navigate("achievements") }
                 )  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
             }
             composable(Screen.Prayers.route) {

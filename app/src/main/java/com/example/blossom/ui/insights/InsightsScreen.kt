@@ -31,7 +31,7 @@ import com.example.blossom.data.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
-    onNavigateToAchievements: () -> Unit = {},
+    onNavigateToMilestones: () -> Unit = {},
     viewModel: InsightsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -86,15 +86,15 @@ fun InsightsScreen(
             }
         }
         
-        // 🏆 ACHIEVEMENTS SECTION
+        // 🏆 MILESTONES SECTION
         item {
             AnimatedVisibility(
                 visible = true,
                 enter = slideInVertically(animationSpec = tween(delayMillis = 300)) + fadeIn()
             ) {
-                AchievementSection(
+                MilestoneSection(
                     achievements = uiState.achievements,
-                    onViewAllAchievements = onNavigateToAchievements
+                    onViewAllMilestones = onNavigateToMilestones
                 )
             }
         }
@@ -155,7 +155,7 @@ fun InsightsScreen(
                 )
             },
             text = {
-                Text("This will permanently delete all your meditation sessions, streaks, and achievements. This action cannot be undone.")
+                Text("This will permanently delete all your meditation sessions, streaks, and milestones. This action cannot be undone.")
             },
             confirmButton = {
                 TextButton(
@@ -431,18 +431,18 @@ fun WeeklyMeditationChart(weeklyData: WeeklyData) {
 }
 
 /**
- * 🏆 ACHIEVEMENT SECTION
- * Display unlocked achievements - CLICKABLE to view all
+ * 🏆 MILESTONE SECTION
+ * Display unlocked milestones - CLICKABLE to view all
  */
 @Composable
-fun AchievementSection(
+fun MilestoneSection(
     achievements: List<Achievement>,
-    onViewAllAchievements: () -> Unit = {}
+    onViewAllMilestones: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onViewAllAchievements() },
+            .clickable { onViewAllMilestones() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
@@ -462,7 +462,7 @@ fun AchievementSection(
                     fontSize = 24.sp
                 )
                 Text(
-                    text = "Achievements",
+                    text = "Milestones",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -472,28 +472,28 @@ fun AchievementSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val unlockedAchievements = achievements.filter { it.unlockedAt != null }
+            val unlockedMilestones = achievements.filter { it.unlockedAt != null }
 
-            if (unlockedAchievements.isEmpty()) {
+            if (unlockedMilestones.isEmpty()) {
                 Text(
-                    text = "Complete your first meditation to unlock achievements! 🌟",
+                    text = "Complete your first meditation to unlock milestones! 🌟",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                unlockedAchievements.take(3).forEach { achievement ->
+                unlockedMilestones.take(3).forEach { achievement ->
                     AchievementItem(achievement = achievement)
-                    if (achievement != unlockedAchievements.last()) {
+                    if (achievement != unlockedMilestones.last()) {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                if (unlockedAchievements.size > 3) {
+                if (unlockedMilestones.size > 3) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "+${unlockedAchievements.size - 3} more achievements",
+                        text = "+${unlockedMilestones.size - 3} more milestones",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
@@ -584,7 +584,7 @@ fun FavoritePatternCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
         )
     ) {
         Column(
@@ -699,7 +699,7 @@ fun JournalInsightsCard(insights: JournalInsights) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
         )
     ) {
         Column(
@@ -757,7 +757,7 @@ fun PrayerInsightsCard(insights: PrayerInsights) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
         )
     ) {
         Column(
@@ -845,7 +845,7 @@ fun ResetStatsCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
         )
     ) {
         Column(
@@ -873,7 +873,7 @@ fun ResetStatsCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Clear all meditation sessions, streaks, and achievements to start fresh.",
+                text = "Clear all meditation sessions, streaks, and milestones to start fresh.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )

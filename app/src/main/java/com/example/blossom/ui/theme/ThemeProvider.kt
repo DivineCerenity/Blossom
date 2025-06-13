@@ -12,8 +12,8 @@ object ThemeProvider {
         return when (theme) {
             AppTheme.COASTAL_SERENITY -> coastalSerenityLightColorScheme()
             AppTheme.AUTUMN_HARVEST -> autumnHarvestLightColorScheme()
-            AppTheme.MEADOW_DREAMS -> meadowDreamsLightColorScheme()
-            AppTheme.DESERT_BLOOM -> desertBloomLightColorScheme()
+            AppTheme.AURORA_DREAMS -> auroraDreamsLightColorScheme()
+            AppTheme.SAKURA_WHISPER -> sakuraWhisperLightColorScheme()
             AppTheme.TWILIGHT_MYSTIQUE -> twilightMystiqueLightColorScheme()
         }
     }
@@ -22,8 +22,8 @@ object ThemeProvider {
         return when (theme) {
             AppTheme.COASTAL_SERENITY -> coastalSerenityDarkColorScheme()
             AppTheme.AUTUMN_HARVEST -> autumnHarvestDarkColorScheme()
-            AppTheme.MEADOW_DREAMS -> meadowDreamsDarkColorScheme()
-            AppTheme.DESERT_BLOOM -> desertBloomDarkColorScheme()
+            AppTheme.AURORA_DREAMS -> auroraDreamsDarkColorScheme()
+            AppTheme.SAKURA_WHISPER -> sakuraWhisperDarkColorScheme()
             AppTheme.TWILIGHT_MYSTIQUE -> twilightMystiqueDarkColorScheme()
         }
     }
@@ -117,97 +117,97 @@ object ThemeProvider {
         onSurfaceVariant = AutumnSageGreen,
         error = AutumnTerracotta
     )
-    
-    // 🌿 MEADOW DREAMS THEMES 🌿
-    private fun meadowDreamsLightColorScheme() = lightColorScheme(
-        primary = MeadowForest,
+
+    // 🌌 AURORA DREAMS THEMES 🌌
+    private fun auroraDreamsLightColorScheme() = lightColorScheme(
+        primary = AuroraMidPurple,
         onPrimary = Color(0xFFFFFFFF),
-        primaryContainer = MeadowSage,
+        primaryContainer = AuroraLavender,
         onPrimaryContainer = Color(0xFF1A1A1A),
-        secondary = MeadowTeal,
+        secondary = AuroraTeal,
         onSecondary = Color(0xFFFFFFFF),
-        secondaryContainer = MeadowLime,
+        secondaryContainer = AuroraMint,
         onSecondaryContainer = Color(0xFF1A1A1A),
-        tertiary = MeadowNavy,
+        tertiary = AuroraDeepPurple,
         onTertiary = Color(0xFFFFFFFF),
-        tertiaryContainer = MeadowSage,
+        tertiaryContainer = AuroraLavender,
         onTertiaryContainer = Color(0xFF1A1A1A),
-        background = MeadowLime,
+        background = Color(0xFFF0F8FF),  // 🌌 SOLID ETHEREAL BACKGROUND
         onBackground = Color(0xFF1A1A1A),
-        surface = MeadowLime,
+        surface = Color(0xFFF0F8FF),  // 🌌 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = MeadowSage,
-        onSurfaceVariant = MeadowNavy,
-        error = MeadowTeal
+        surfaceVariant = AuroraLavender,
+        onSurfaceVariant = AuroraDeepPurple,
+        error = AuroraMidPurple
     )
 
-    private fun meadowDreamsDarkColorScheme() = darkColorScheme(
-        primary = MeadowSage,
+    private fun auroraDreamsDarkColorScheme() = darkColorScheme(
+        primary = AuroraLavender,
         onPrimary = Color(0xFF1A1A1A),
-        primaryContainer = MeadowForest,
+        primaryContainer = AuroraDeepPurple,
         onPrimaryContainer = Color(0xFFE5E5E5),
-        secondary = MeadowLime,
+        secondary = AuroraMint,
         onSecondary = Color(0xFF1A1A1A),
-        secondaryContainer = MeadowNavy,
+        secondaryContainer = AuroraTeal,
         onSecondaryContainer = Color(0xFFE5E5E5),
-        tertiary = MeadowTeal,
+        tertiary = AuroraMidPurple,
         onTertiary = Color(0xFF1A1A1A),
-        tertiaryContainer = MeadowForest,
+        tertiaryContainer = AuroraDeepPurple,
         onTertiaryContainer = Color(0xFFE5E5E5),
-        background = MeadowNavy,
+        background = Color(0xFF0F0A1A),  // Deep cosmic background
         onBackground = Color(0xFFE5E5E5),
-        surface = MeadowNavy,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
+        surface = Color(0xFF0F0A1A),  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = MeadowForest,
-        onSurfaceVariant = MeadowSage,
-        error = MeadowTeal
+        surfaceVariant = AuroraDeepPurple,
+        onSurfaceVariant = AuroraLavender,
+        error = AuroraMidPurple
     )
-    
-    // 🌵 DESERT BLOOM THEMES 🌵
-    private fun desertBloomLightColorScheme() = lightColorScheme(
-        primary = DesertSage,
+
+    // 🌸 SAKURA WHISPER THEMES 🌸
+    private fun sakuraWhisperLightColorScheme() = lightColorScheme(
+        primary = SakuraBlush,
         onPrimary = Color(0xFFFFFFFF),
-        primaryContainer = DesertMint,
+        primaryContainer = SakuraSoftPink,
         onPrimaryContainer = Color(0xFF1A1A1A),
-        secondary = DesertGold,
-        onSecondary = Color(0xFF1A1A1A),
-        secondaryContainer = DesertCream,
+        secondary = SakuraSage,
+        onSecondary = Color(0xFFFFFFFF),
+        secondaryContainer = SakuraCream,
         onSecondaryContainer = Color(0xFF1A1A1A),
-        tertiary = DesertCoral,
+        tertiary = SakuraRose,
         onTertiary = Color(0xFFFFFFFF),
-        tertiaryContainer = DesertMint,
+        tertiaryContainer = SakuraSoftPink,
         onTertiaryContainer = Color(0xFF1A1A1A),
-        background = DesertCream,
+        background = SakuraCream,  // 🌸 WARM CREAM BACKGROUND
         onBackground = Color(0xFF1A1A1A),
-        surface = DesertCream,
+        surface = SakuraCream,  // 🌸 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = DesertMint,
-        onSurfaceVariant = DesertSage,
-        error = DesertCoral
+        surfaceVariant = SakuraSoftPink,
+        onSurfaceVariant = SakuraRose,
+        error = SakuraRose
     )
 
-    private fun desertBloomDarkColorScheme() = darkColorScheme(
-        primary = DesertMint,
+    private fun sakuraWhisperDarkColorScheme() = darkColorScheme(
+        primary = SakuraSoftPink,
         onPrimary = Color(0xFF1A1A1A),
-        primaryContainer = DesertSage,
+        primaryContainer = SakuraRose,
         onPrimaryContainer = Color(0xFFE5E5E5),
-        secondary = DesertGold,
+        secondary = SakuraSage,
         onSecondary = Color(0xFF1A1A1A),
-        secondaryContainer = DesertCoral,
+        secondaryContainer = SakuraBlush,
         onSecondaryContainer = Color(0xFFE5E5E5),
-        tertiary = DesertCream,
+        tertiary = SakuraCream,
         onTertiary = Color(0xFF1A1A1A),
-        tertiaryContainer = DesertSage,
+        tertiaryContainer = SakuraRose,
         onTertiaryContainer = Color(0xFFE5E5E5),
-        background = Color(0xFF1A1F1A),
+        background = Color(0xFF2A1F2A),  // 🌸 DEEP WARM BACKGROUND
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF1A1F1A),  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
+        surface = Color(0xFF2A1F2A),  // 🌸 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = DesertSage,
-        onSurfaceVariant = DesertMint,
-        error = DesertCoral
+        surfaceVariant = SakuraRose,
+        onSurfaceVariant = SakuraSoftPink,
+        error = SakuraBlush
     )
-    
+
     // 🌙 TWILIGHT MYSTIQUE THEMES 🌙
     private fun twilightMystiqueLightColorScheme() = lightColorScheme(
         primary = TwilightPurple,

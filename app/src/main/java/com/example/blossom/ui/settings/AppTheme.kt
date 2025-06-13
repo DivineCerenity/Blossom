@@ -12,13 +12,13 @@ enum class AppTheme(
         displayName = "Autumn Harvest",
         description = "Rich terracotta to sage greens - grounding and natural"
     ),
-    MEADOW_DREAMS(
-        displayName = "Meadow Dreams",
-        description = "Vibrant lime to deep forest - energizing yet calming"
+    AURORA_DREAMS(
+        displayName = "Aurora Dreams",
+        description = "Cosmic purples to ethereal mint - magical and transcendent"
     ),
-    DESERT_BLOOM(
-        displayName = "Desert Bloom",
-        description = "Sage to warm coral - sophisticated and warm"
+    SAKURA_WHISPER(
+        displayName = "Sakura Whisper",
+        description = "Gentle cherry blossom pinks to warm creams - serene and nurturing"
     ),
     TWILIGHT_MYSTIQUE(
         displayName = "Twilight Mystique",
