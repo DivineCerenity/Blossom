@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "8081295856",
+    "project_id": "vaulted-night-167320",
+    "storage_bucket": "vaulted-night-167320.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8081295856:android:612d8a5da4c5c3fa8e3535",
+        "android_client_info": {
+          "package_name": "com.jonathon.blossom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALtYxe5sIOBMX-PkhHXWlEYhV77k3MRDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8081295856:android:9be331c86db918b28e3535",
+        "android_client_info": {
+          "package_name": "com.jonathon.blossom.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALtYxe5sIOBMX-PkhHXWlEYhV77k3MRDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

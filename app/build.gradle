@@ -4,14 +4,15 @@ plugins {
     id 'kotlin-kapt'
     id 'com.google.dagger.hilt.android'
     id 'com.google.devtools.ksp'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.0'
 }
 
 android {
-    namespace 'com.example.blossom'
+    namespace 'com.jonathon.blossom'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.blossom"
+        applicationId "com.jonathon.blossom"
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -43,9 +44,7 @@ android {
     buildFeatures {
         compose true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.5.10'
-    }
+    // composeOptions block removed; managed by Compose Compiler plugin
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
@@ -83,6 +82,12 @@ dependencies {
     implementation "androidx.navigation:navigation-compose:2.7.7"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0"
     implementation "androidx.lifecycle:lifecycle-runtime-compose:2.7.0"
+    implementation "com.google.android.gms:play-services-auth:20.7.0"
+
+    // Firebase BoM and Auth (future-proofing)
+    implementation platform('com.google.firebase:firebase-bom:33.15.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-analytics'
 
     // Room
     implementation "androidx.room:room-runtime:$room_version"
@@ -93,6 +98,8 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
     implementation 'androidx.hilt:hilt-navigation-compose:1.1.0'
+    implementation 'androidx.hilt:hilt-work:1.1.0'
+    kapt 'androidx.hilt:hilt-compiler:1.1.0'
     implementation 'androidx.hilt:hilt-work:1.1.0'
     kapt 'androidx.hilt:hilt-compiler:1.1.0'
 
@@ -123,3 +130,5 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling"
     debugImplementation "androidx.compose.ui:ui-test-manifest"
 }
+
+apply plugin: 'com.google.gms.google-services'

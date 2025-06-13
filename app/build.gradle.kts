@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.blossom"
+    namespace = "com.jonathon.blossom"
     compileSdk = 34
 
     compileOptions {
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.blossom"
+        applicationId = "com.jonathon.blossom"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -112,4 +112,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("androidx.compose.material3:material3:1.6.1")
+
+    // Google Drive API
+    implementation("com.google.android.gms:play-services-drive:17.0.0")
 }

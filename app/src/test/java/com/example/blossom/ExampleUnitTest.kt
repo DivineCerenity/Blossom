@@ -1,4 +1,4 @@
-package com.example.blossom
+package com.jonathon.blossom
 
 import org.junit.Test
 
