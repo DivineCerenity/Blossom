@@ -161,26 +161,8 @@ fun PrayerRequestsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // Stats Cards
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatsCard(
-                    title = "Active",
-                    count = uiState.activePrayerCount,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-                StatsCard(
-                    title = "Answered",
-                    count = uiState.answeredPrayerCount,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            // 🎯 STATS CARDS REMOVED - Available in Insights tab!
+            // More space for prayers = better UX!
 
             // Tab Row
             TabRow(selectedTabIndex = selectedTab) {
@@ -255,10 +237,11 @@ fun PrayerRequestsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
-                        if (searchQuery.isEmpty()) {
+                        if (searchQuery.isEmpty() && selectedTab == 0) {
+                            // 🎯 ONLY show "add prayer" message on Active tab
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tap the + button to add your first prayer request",
+                                text = "Tap + to add your first prayer",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -412,37 +395,8 @@ fun PrayerRequestsScreen(
     }
 }
 
-@Composable
-fun StatsCard(
-    title: String,
-    count: Int,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp), // 🎯 REDUCED from 16dp to 12dp
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.titleLarge, // 🎯 REDUCED from headlineMedium to titleLarge
-                color = color,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall, // 🎯 REDUCED from bodyMedium to bodySmall
-                color = color
-            )
-        }
-    }
-}
+// 🎯 STATS CARD REMOVED - No longer needed!
+// Prayer statistics are beautifully displayed in the Insights tab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
