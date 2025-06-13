@@ -273,7 +273,7 @@ fun PrayerRequestsScreen(
                 ) {
                     if (sortedPrayerRequests.isNotEmpty()) {
                         item {
-                            HintCard(text = "💡 Long press for actions")
+                            HintCard(text = "💡 Long press for options")
                         }
                     }
                     itemsIndexed(sortedPrayerRequests, key = { _, prayer -> prayer.id }) { index, prayerRequest ->
@@ -426,18 +426,18 @@ fun StatsCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp), // 🎯 REDUCED from 16dp to 12dp
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = count.toString(),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge, // 🎯 REDUCED from headlineMedium to titleLarge
                 color = color,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall, // 🎯 REDUCED from bodyMedium to bodySmall
                 color = color
             )
         }

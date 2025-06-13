@@ -126,7 +126,12 @@ fun BlossomApp(
                                         )
                                     }
                                 },
-                                label = { Text(screen.label) },
+                                label = {
+                                    Text(
+                                        text = screen.label,
+                                        style = MaterialTheme.typography.labelSmall // 🎯 SMALLER for navbar
+                                    )
+                                },
                                 selected = true,
                                 onClick = {
                                     if (screen == Screen.JournalList) {
@@ -140,7 +145,12 @@ fun BlossomApp(
                             // Regular navigation items
                             NavigationBarItem(
                                 icon = { Icon(screen.icon, contentDescription = screen.label) },
-                                label = { Text(screen.label) },
+                                label = {
+                                    Text(
+                                        text = screen.label,
+                                        style = MaterialTheme.typography.labelSmall // 🎯 SMALLER for navbar
+                                    )
+                                },
                                 selected = isSelected,
                                 onClick = {
                                     navController.navigate(screen.route) {

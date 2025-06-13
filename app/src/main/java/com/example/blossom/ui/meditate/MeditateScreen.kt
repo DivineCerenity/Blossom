@@ -274,7 +274,7 @@ fun MeditateScreen() {
                         text = when {
                             isRunning && isPaused -> "Tap to resume • Long press to stop"
                             isRunning -> "Tap to pause • Long press to stop"
-                            else -> "Tap timer to start • Long press for settings"
+                            else -> "Tap to start • Long press for settings"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
