@@ -82,6 +82,7 @@ class DailyHabitRepository @Inject constructor(
     }
 
     fun scheduleReminder(habit: DailyHabit) {
+        if (habit.reminderTime <= 0) return // Don't schedule if no reminder time set
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = habit.reminderTime
 
@@ -108,7 +109,7 @@ class DailyHabitRepository @Inject constructor(
 
     fun scheduleTestNotification(habit: DailyHabit) {
         val workRequest = OneTimeWorkRequestBuilder<HabitReminderWorker>()
-            .setInputData(workDataOf("habit_id" to habit.id))
+            .setInputData(workDataOf("habit_id" to habit.id, "is_test" to true))
             .setInitialDelay(1, TimeUnit.MINUTES)
             .addTag("habit_${habit.id}")
             .build()
@@ -125,4 +126,4 @@ class DailyHabitRepository @Inject constructor(
         WorkManager.getInstance(context)
             .cancelUniqueWork("habit_$habitId")
     }
-} 
+}

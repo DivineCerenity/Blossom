@@ -29,6 +29,7 @@ class HabitReminderWorker(
 
     override suspend fun doWork(): Result {
         val habitId = inputData.getInt("habit_id", -1)
+        val isTest = inputData.getBoolean("is_test", false)
         if (habitId == -1) return Result.failure()
 
         // Get database instance directly
@@ -59,9 +60,11 @@ class HabitReminderWorker(
         createNotificationChannel()
         showNotification(habit)
 
-        // Schedule the next reminder using repository
-        val repository = DailyHabitRepository(habitDao, context)
-        repository.scheduleReminder(habit)
+        // Only schedule the next reminder if this is not a test notification
+        if (!isTest) {
+            val repository = DailyHabitRepository(habitDao, context)
+            repository.scheduleReminder(habit)
+        }
 
         return Result.success()
     }
@@ -109,4 +112,4 @@ class HabitReminderWorker(
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
-} 
+}

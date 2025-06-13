@@ -1,5 +1,7 @@
 package com.jonathon.blossom.ui.habits
 
+import android.app.TimePickerDialog
+import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -49,8 +51,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import com.jonathon.blossom.ui.components.EntryActionBottomSheet
+import com.jonathon.blossom.ui.components.HintCard
+import androidx.compose.ui.platform.LocalContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DailyHabitsScreen(
     onNavigateToAddHabit: () -> Unit,
@@ -62,6 +67,10 @@ fun DailyHabitsScreen(
     var selectedHabitId by remember { mutableStateOf<Int?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var habitToDelete by remember { mutableStateOf<DailyHabit?>(null) }
+    var showActionBottomSheet by remember { mutableStateOf(false) }
+    var selectedHabitForAction by remember { mutableStateOf<DailyHabit?>(null) }
+    var showDescriptionDialog by remember { mutableStateOf(false) }
+    var selectedHabitForDescription by remember { mutableStateOf<DailyHabit?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadHabits()
@@ -127,17 +136,13 @@ fun DailyHabitsScreen(
                         viewModel.completeHabit(habit)
                     }
                 },
-                onEditClick = onNavigateToEditHabit,
-                onDeleteClick = { habit ->
-                    habitToDelete = habit
-                    showDeleteDialog = true
+                onHabitClick = { habit ->
+                    selectedHabitForDescription = habit
+                    showDescriptionDialog = true
                 },
-                onReminderClick = { habitId ->
-                    selectedHabitId = habitId
-                    showTimePicker = true
-                },
-                onTestNotification = { habit ->
-                    viewModel.testNotification(habit)
+                onHabitLongPress = { habit ->
+                    selectedHabitForAction = habit
+                    showActionBottomSheet = true
                 },
                 modifier = Modifier
                     .fillMaxSize()
@@ -154,6 +159,44 @@ fun DailyHabitsScreen(
                     viewModel.updateHabitReminder(id, timeInMillis)
                 }
                 showTimePicker = false
+            }
+        )
+    }
+
+    // 📱 HABIT ACTION BOTTOM SHEET
+    selectedHabitForAction?.let { habit ->
+        EntryActionBottomSheet(
+            isVisible = showActionBottomSheet,
+            title = "Habit Actions",
+            actions = HabitActions.getActions(
+                hasReminder = habit.reminderTime > 0,
+                onEdit = {
+                    onNavigateToEditHabit(habit.id)
+                },
+                onDelete = {
+                    habitToDelete = habit
+                    showDeleteDialog = true
+                },
+                onSetReminder = {
+                    selectedHabitId = habit.id
+                    showTimePicker = true
+                }
+            ),
+            onDismiss = {
+                showActionBottomSheet = false
+                selectedHabitForAction = null
+            }
+        )
+    }
+
+    // 📖 HABIT DESCRIPTION DIALOG
+    selectedHabitForDescription?.let { habit ->
+        HabitDescriptionDialog(
+            habit = habit,
+            isVisible = showDescriptionDialog,
+            onDismiss = {
+                showDescriptionDialog = false
+                selectedHabitForDescription = null
             }
         )
     }
@@ -274,165 +317,27 @@ fun TimePickerDialog(
     onTimeSelected: (Long) -> Unit,
     initialTime: Long = System.currentTimeMillis()
 ) {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = initialTime
-    }
-    var selectedHour by remember { mutableStateOf(calendar.get(Calendar.HOUR)) }
-    var selectedMinute by remember { mutableStateOf(calendar.get(Calendar.MINUTE)) }
-    var isAm by remember { mutableStateOf(calendar.get(Calendar.AM_PM) == Calendar.AM) }
+    val context = LocalContext.current
+    val calendar = remember { Calendar.getInstance().apply { timeInMillis = initialTime } }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { 
-            Text(
-                "Set Reminder Time",
-                style = MaterialTheme.typography.titleLarge
-            ) 
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Hour",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = selectedHour.toString(),
-                            onValueChange = { newValue ->
-                                newValue.toIntOrNull()?.let { num ->
-                                    if (num in 1..12) {
-                                        selectedHour = num
-                                    }
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Next
-                            ),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.headlineMedium.copy(
-                                textAlign = TextAlign.Center
-                            ),
-                            modifier = Modifier.width(80.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    }
-                    
-                    Text(
-                        ":",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Minute",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = String.format("%02d", selectedMinute),
-                            onValueChange = { newValue ->
-                                newValue.toIntOrNull()?.let { num ->
-                                    if (num in 0..59) {
-                                        selectedMinute = num
-                                    }
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
-                            ),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.headlineMedium.copy(
-                                textAlign = TextAlign.Center
-                            ),
-                            modifier = Modifier.width(80.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    FilterChip(
-                        selected = isAm,
-                        onClick = { isAm = true },
-                        label = { Text("AM") },
-                        leadingIcon = {
-                            if (isAm) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    )
-                    FilterChip(
-                        selected = !isAm,
-                        onClick = { isAm = false },
-                        label = { Text("PM") },
-                        leadingIcon = {
-                            if (!isAm) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val hour = when {
-                        isAm && selectedHour == 12 -> 0
-                        !isAm && selectedHour != 12 -> selectedHour + 12
-                        else -> selectedHour
-                    }
-                    calendar.set(Calendar.HOUR_OF_DAY, hour)
-                    calendar.set(Calendar.MINUTE, selectedMinute)
-                    onTimeSelected(calendar.timeInMillis)
-                }
-            ) {
-                Text("Set")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
+    LaunchedEffect(Unit) {
+        val timePickerDialog = TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                onTimeSelected(calendar.timeInMillis)
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            false
+        )
+
+        timePickerDialog.setOnDismissListener { onDismiss() }
+        timePickerDialog.show()
+    }
 }
 
 @Composable
@@ -608,10 +513,8 @@ private fun formatTime(timeInMillis: Long): String {
 fun HabitCompletionDashboard(
     habits: List<DailyHabit>,
     onHabitToggle: (DailyHabit) -> Unit,
-    onEditClick: (Int) -> Unit,
-    onDeleteClick: (DailyHabit) -> Unit,
-    onReminderClick: (Int) -> Unit,
-    onTestNotification: (DailyHabit) -> Unit,
+    onHabitClick: (DailyHabit) -> Unit,
+    onHabitLongPress: (DailyHabit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -622,6 +525,13 @@ fun HabitCompletionDashboard(
         // 📊 Daily Progress Summary
         item {
             HabitProgressSummary(habits = habits)
+        }
+
+        // 💡 Hint Card
+        if (habits.isNotEmpty()) {
+            item {
+                HintCard(text = "💡 Tap to view • Long press for options")
+            }
         }
 
         // 🎯 Today's Habits
@@ -640,10 +550,8 @@ fun HabitCompletionDashboard(
             HabitCompletionCard(
                 habit = habit,
                 onToggle = { onHabitToggle(habit) },
-                onEditClick = { onEditClick(habit.id) },
-                onDeleteClick = { onDeleteClick(habit) },
-                onReminderClick = { onReminderClick(habit.id) },
-                onTestNotification = { onTestNotification(habit) }
+                onClick = { onHabitClick(habit) },
+                onLongPress = { onHabitLongPress(habit) }
             )
         }
     }
@@ -787,10 +695,8 @@ fun ProgressItem(
 fun HabitCompletionCard(
     habit: DailyHabit,
     onToggle: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onReminderClick: () -> Unit,
-    onTestNotification: (DailyHabit) -> Unit
+    onClick: () -> Unit,
+    onLongPress: () -> Unit
 ) {
     // Animation states
     val scale by animateFloatAsState(
@@ -810,8 +716,8 @@ fun HabitCompletionCard(
             .fillMaxWidth()
             .scale(scale)
             .combinedClickable(
-                onClick = onToggle,
-                onLongClick = onEditClick
+                onClick = onClick,
+                onLongClick = onLongPress
             ),
         colors = CardDefaults.cardColors(
             containerColor = if (habit.isCompleted) {
@@ -873,11 +779,12 @@ fun HabitCompletionCard(
 
                     if (habit.description.isNotBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
+                        val shortDescription = habit.description.split(" ").take(6).joinToString(" ") + if (habit.description.split(" ").size > 6) "..." else ""
                         Text(
-                            text = habit.description,
+                            text = shortDescription,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -907,42 +814,6 @@ fun HabitCompletionCard(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                    }
-                }
-
-                // ⚙️ Action Buttons
-                Row {
-                    IconButton(onClick = onReminderClick) {
-                        Icon(
-                            imageVector = if (habit.reminderTime > 0) Icons.Default.Notifications else Icons.Default.NotificationsOff,
-                            contentDescription = "Set Reminder",
-                            tint = if (habit.reminderTime > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(onClick = { onTestNotification(habit) }) {
-                        Icon(
-                            imageVector = Icons.Default.NotificationsActive,
-                            contentDescription = "Test Notification",
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(onClick = onEditClick) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(onClick = onDeleteClick) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
                     }
                 }
             }
@@ -1024,4 +895,130 @@ fun getMotivationalMessage(percentage: Int, completed: Int, total: Int): String 
         completed > 0 -> "✨ You've started your journey! Keep it up!"
         else -> "🌸 Ready to begin your spiritual practice?"
     }
-} 
+}
+
+/**
+ * 🎯 HABIT ACTIONS
+ * Actions available for habit entries in bottom sheet
+ */
+object HabitActions {
+    fun getActions(
+        hasReminder: Boolean,
+        onEdit: () -> Unit,
+        onDelete: () -> Unit,
+        onSetReminder: () -> Unit
+    ): List<com.jonathon.blossom.ui.components.BottomSheetAction> = listOf(
+        com.jonathon.blossom.ui.components.BottomSheetAction(
+            title = "Edit Habit",
+            subtitle = "Modify this habit",
+            icon = Icons.Default.Edit,
+            type = com.jonathon.blossom.ui.components.ActionType.PRIMARY,
+            onClick = onEdit
+        ),
+        com.jonathon.blossom.ui.components.BottomSheetAction(
+            title = if (hasReminder) "Update Reminder" else "Set Reminder",
+            subtitle = if (hasReminder) "Change reminder time" else "Add a daily reminder",
+            icon = if (hasReminder) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+            type = com.jonathon.blossom.ui.components.ActionType.PRIMARY,
+            onClick = onSetReminder
+        ),
+        com.jonathon.blossom.ui.components.BottomSheetAction(
+            title = "Delete Habit",
+            subtitle = "Remove this habit permanently",
+            icon = Icons.Default.Delete,
+            type = com.jonathon.blossom.ui.components.ActionType.DESTRUCTIVE,
+            onClick = onDelete
+        )
+    )
+}
+
+/**
+ * 📖 HABIT DESCRIPTION DIALOG
+ * Shows full habit details when tapped
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HabitDescriptionDialog(
+    habit: DailyHabit,
+    isVisible: Boolean,
+    onDismiss: () -> Unit
+) {
+    if (isVisible) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text(
+                    text = habit.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    if (habit.description.isNotBlank()) {
+                        Text(
+                            text = habit.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    } else {
+                        Text(
+                            text = "No description provided for this habit.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    }
+
+                    // Show additional details
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (habit.reminderTime > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Reminder: ${formatTime(habit.reminderTime)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    if (habit.streakCount > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "🔥",
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = "${habit.streakCount} day${if (habit.streakCount != 1) "s" else ""} streak",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.large
+        )
+    }
+}
