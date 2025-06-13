@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Sensitive and environment files
+app/google-services.json
+*.keystore
+*.log
+.env
