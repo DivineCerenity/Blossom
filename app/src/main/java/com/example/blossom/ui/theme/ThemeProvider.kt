@@ -236,7 +236,7 @@ object ThemeProvider {
         onBackground = Color(0xFF1A1A1A),
         surface = OceanPearl,  // 🌊 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = OceanMist,
+        surfaceVariant = OceanSeafoam, // Use seafoam for cards/sections
         onSurfaceVariant = OceanDeepTeal,
         error = OceanMidTeal
     )
@@ -256,9 +256,9 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = Color(0xFF0A1A1A),  // 🌊 DEEP OCEAN BACKGROUND
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF0A1A1A),  // 🌊 MATCH BACKGROUND FOR CONSISTENCY
+        surface = Color(0xFF0A1A1A),  // Use deep ocean for all main surfaces
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = OceanDeepTeal,
+        surfaceVariant = OceanDeepTeal, // Use deep teal for cards/sections
         onSurfaceVariant = OceanSeafoam,
         error = OceanMidTeal
     )
@@ -279,9 +279,9 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFF1A1A1A),
         background = GoldenCream,  // ✨ GOLDEN CREAM BACKGROUND
         onBackground = Color(0xFF1A1A1A),
-        surface = GoldenCream,  // ✨ MATCH BACKGROUND FOR CONSISTENCY
+        surface = GoldenCream,  // Gentle, warm base for all surfaces
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = GoldenBlush,
+        surfaceVariant = GoldenPeach, // Use peach for cards/sections
         onSurfaceVariant = GoldenDeep,
         error = GoldenWarm
     )
@@ -301,10 +301,10 @@ object ThemeProvider {
         onTertiaryContainer = Color(0xFFE5E5E5),
         background = Color(0xFF2A1F0A),  // ✨ DEEP GOLDEN BACKGROUND
         onBackground = Color(0xFFE5E5E5),
-        surface = Color(0xFF2A1F0A),  // ✨ MATCH BACKGROUND FOR CONSISTENCY
+        surface = Color(0xFF2A1F0A),  // Deep brown for all main surfaces
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = GoldenDeep,
-        onSurfaceVariant = GoldenPeach,
+        surfaceVariant = GoldenPeach, // Use peach for cards/sections
+        onSurfaceVariant = GoldenDeep,
         error = GoldenWarm
     )
 
@@ -326,7 +326,7 @@ object ThemeProvider {
         onBackground = Color(0xFF1A1A1A),
         surface = MoonlitPearl,  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = MoonlitMist,
+        surfaceVariant = MoonlitBlue, // Use blue for cards/sections
         onSurfaceVariant = MoonlitSilver,
         error = MoonlitBlue
     )
@@ -348,8 +348,8 @@ object ThemeProvider {
         onBackground = Color(0xFFE5E5E5),
         surface = Color(0xFF1A1A2A),  // 🌙 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = MoonlitSilver,
-        onSurfaceVariant = MoonlitLavender,
+        surfaceVariant = MoonlitLavender, // Use lavender for cards/sections
+        onSurfaceVariant = MoonlitSilver,
         error = MoonlitBlue
     )
 
@@ -371,7 +371,7 @@ object ThemeProvider {
         onBackground = Color(0xFF1A1A1A),
         surface = ForestMint,  // 🌿 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFF1A1A1A),
-        surfaceVariant = ForestMoss,
+        surfaceVariant = ForestSage, // Use sage for cards/sections
         onSurfaceVariant = ForestDeepGreen,
         error = ForestEmerald
     )
@@ -393,8 +393,8 @@ object ThemeProvider {
         onBackground = Color(0xFFE5E5E5),
         surface = Color(0xFF0F1F0F),  // 🌿 MATCH BACKGROUND FOR CONSISTENCY
         onSurface = Color(0xFFE5E5E5),
-        surfaceVariant = ForestDeepGreen,
-        onSurfaceVariant = ForestSage,
+        surfaceVariant = ForestSage, // Use sage for cards/sections
+        onSurfaceVariant = ForestDeepGreen,
         error = ForestEmerald
     )
 
