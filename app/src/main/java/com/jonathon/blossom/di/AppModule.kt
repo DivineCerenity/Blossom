@@ -11,6 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.jonathon.blossom.network.DriveApiService
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
@@ -50,6 +51,22 @@ object AppModule {
         return retrofit.create(ApiService::class.java)
     }
 
+    @Provides
+    @Singleton
+    @DriveRetrofit
+    fun provideDriveRetrofit(moshi: Moshi): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://www.googleapis.com/drive/v3/")
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDriveApiService(@DriveRetrofit retrofit: Retrofit): DriveApiService {
+        return retrofit.create(DriveApiService::class.java)
+    }
+
     // --- Settings Repository ---
     @Provides
     @Singleton
@@ -62,5 +79,12 @@ object AppModule {
     @Singleton
     fun provideMeditationAudioManager(@ApplicationContext context: Context): MeditationAudioManager {
         return MeditationAudioManager(context)
+    }
+
+    // --- Backup Manager ---
+    @Provides
+    @Singleton
+    fun provideBackupManager(@ApplicationContext context: Context, database: com.jonathon.blossom.data.BlossomDatabase, moshi: Moshi, driveApiService: com.jonathon.blossom.network.DriveApiService): com.jonathon.blossom.ui.settings.BackupManager {
+        return com.jonathon.blossom.ui.settings.BackupManager(context, database, moshi, driveApiService)
     }
 }

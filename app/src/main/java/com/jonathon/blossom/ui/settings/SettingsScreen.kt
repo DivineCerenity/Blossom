@@ -12,10 +12,15 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,7 +48,13 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val newAchievements by viewModel.newAchievements.collectAsState()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        android.util.Log.i("SettingsScreen", "Activity result received: resultCode=${result.resultCode}, data=${result.data}")
         if (result.resultCode == Activity.RESULT_OK) {
+            android.util.Log.i("SettingsScreen", "Result OK, calling handleGoogleSignInResult")
+            viewModel.handleGoogleSignInResult(result.data)
+        } else {
+            android.util.Log.w("SettingsScreen", "Sign-in was canceled or failed: resultCode=${result.resultCode}")
+            // Even if canceled, let's try to handle the result to see if there's error info
             viewModel.handleGoogleSignInResult(result.data)
         }
     }
@@ -97,7 +108,11 @@ fun SettingsScreen(
                     isSignedIn = uiState.isGoogleSignedIn,
                     userEmail = uiState.googleUserEmail,
                     onSignInClick = { viewModel.signInWithGoogle(launcher) },
-                    onSignOutClick = { viewModel.signOutGoogle() }
+                    onSignOutClick = { viewModel.signOutGoogle() },
+                    onBackupClick = { viewModel.triggerBackup() },
+                    onRestoreClick = { viewModel.triggerRestore() },
+                    backupStatus = uiState.backupStatus,
+                    restoreStatus = uiState.restoreStatus
                 )
             }
 
@@ -256,37 +271,169 @@ fun GoogleSignInSection(
     isSignedIn: Boolean,
     userEmail: String?,
     onSignInClick: () -> Unit,
-    onSignOutClick: () -> Unit
+    onSignOutClick: () -> Unit,
+    onBackupClick: () -> Unit = {},
+    onRestoreClick: () -> Unit = {},
+    backupStatus: String = "",
+    restoreStatus: String = ""
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column {
+            // Header Section
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = if (isSignedIn) "Signed in to Google Drive" else "Google Drive",
+                    text = "Google Drive Backup",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 if (isSignedIn && userEmail != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Connected as $userEmail",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
                     Text(
-                        text = userEmail,
+                        text = "Connect your Google account to backup your data",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
+
+            // Sign In/Out Button
             Button(
-                onClick = if (isSignedIn) onSignOutClick else onSignInClick
+                onClick = if (isSignedIn) onSignOutClick else onSignInClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = if (isSignedIn) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                } else {
+                    ButtonDefaults.buttonColors()
+                }
             ) {
-                Text(if (isSignedIn) "Sign out" else "Sign in")
+                Icon(
+                    imageVector = if (isSignedIn) Icons.Default.Logout else Icons.Default.Login,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isSignedIn) "Sign Out" else "Connect Google Drive",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            // Backup/Restore Section (only when signed in)
+            if (isSignedIn) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Data Management",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onBackupClick,
+                            enabled = backupStatus != "Backing up..." && restoreStatus != "Restoring...",
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Backup")
+                        }
+
+                        Button(
+                            onClick = onRestoreClick,
+                            enabled = restoreStatus != "Restoring..." && backupStatus != "Backing up...",
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Restore")
+                        }
+                    }
+
+                    // Status Messages
+                    if (backupStatus.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Text(
+                                text = "Backup: $backupStatus",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    if (restoreStatus.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Text(
+                                text = "Restore: $restoreStatus",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

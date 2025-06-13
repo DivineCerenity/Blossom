@@ -8,6 +8,9 @@ interface PrayerRequestDao {
     
     @Query("SELECT * FROM prayer_requests ORDER BY priority DESC, createdDate DESC")
     fun getAllPrayerRequests(): Flow<List<PrayerRequest>>
+
+    @Query("SELECT * FROM prayer_requests ORDER BY priority DESC, createdDate DESC")
+    suspend fun getAllPrayerRequestsSync(): List<PrayerRequest>
     
     @Query("SELECT * FROM prayer_requests WHERE isAnswered = 0 ORDER BY priority DESC, createdDate DESC")
     fun getActivePrayerRequests(): Flow<List<PrayerRequest>>
@@ -23,6 +26,9 @@ interface PrayerRequestDao {
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(prayerRequest: PrayerRequest)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(prayerRequests: List<PrayerRequest>)
     
     @Update
     suspend fun update(prayerRequest: PrayerRequest)

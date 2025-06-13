@@ -13,9 +13,15 @@ interface AnalyticsDao {
     // 🧘‍♂️ MEDITATION SESSION OPERATIONS
     @Insert
     suspend fun insertMeditationSession(session: MeditationSession)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSessions(sessions: List<MeditationSession>)
     
     @Query("SELECT * FROM meditation_sessions ORDER BY startTime DESC")
     fun getAllMeditationSessions(): Flow<List<MeditationSession>>
+
+    @Query("SELECT * FROM meditation_sessions ORDER BY startTime DESC")
+    suspend fun getAllSessionsSync(): List<MeditationSession>
     
     @Query("SELECT * FROM meditation_sessions WHERE completed = 1 ORDER BY startTime DESC")
     fun getCompletedMeditationSessions(): Flow<List<MeditationSession>>

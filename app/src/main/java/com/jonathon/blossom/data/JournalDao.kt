@@ -13,10 +13,16 @@ interface JournalDao {
     @Query("SELECT * FROM journal_entries ORDER BY creationTimestamp DESC")
     fun getAllEntries(): Flow<List<JournalEntry>>
 
+    @Query("SELECT * FROM journal_entries ORDER BY creationTimestamp DESC")
+    suspend fun getAllEntriesSync(): List<JournalEntry>
+
     // Inserts a new entry. If an entry with the same ID exists, it replaces it.
     // This handles both "add new" and "update existing" perfectly.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJournalEntry(entry: JournalEntry)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entries: List<JournalEntry>)
 
     // Deletes an entry.
     @Delete

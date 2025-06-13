@@ -10,6 +10,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.Scope
 import com.jonathon.blossom.data.AnalyticsRepository
 import com.jonathon.blossom.data.Achievement
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,14 +20,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
-// import com.google.android.gms.drive.Drive // 🔧 COMMENTED OUT - Drive API not yet added
+import com.google.android.gms.drive.Drive // 🔧 Uncommented to enable Drive API
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val analyticsRepository: AnalyticsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val backupManager: BackupManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -58,15 +60,23 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun setupGoogleSignInClient() {
+        Log.i("SettingsViewModel", "Setting up Google Sign-In client...")
+
+        // Full configuration using web client ID for ID token
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            // .requestScopes(Drive.SCOPE_FILE, Drive.SCOPE_APPFOLDER) // 🔧 COMMENTED OUT - Drive API not yet added
+            .requestIdToken("360747118344-9p9v9qsst2ng0qta52egmgckejv9b3mv.apps.googleusercontent.com")
+            .requestServerAuthCode("360747118344-9p9v9qsst2ng0qta52egmgckejv9b3mv.apps.googleusercontent.com")
+            .requestScopes(com.google.android.gms.common.api.Scope("https://www.googleapis.com/auth/drive.file"))
             .build()
+
         googleSignInClient = GoogleSignIn.getClient(context, gso)
+        Log.i("SettingsViewModel", "Google Sign-In client created: $googleSignInClient")
     }
 
     private fun checkGoogleSignInStatus() {
         val account = GoogleSignIn.getLastSignedInAccount(context)
+        Log.i("SettingsViewModel", "Checking sign-in status: account=${account?.email}, isSignedIn=${account != null}")
         _uiState.value = _uiState.value.copy(
             isGoogleSignedIn = account != null,
             googleUserEmail = account?.email
@@ -74,22 +84,54 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(launcher: ActivityResultLauncher<Intent>) {
+        Log.i("SettingsViewModel", "=== GOOGLE SIGN-IN DEBUG START ===")
+        Log.i("SettingsViewModel", "signInWithGoogle called")
+        Log.i("SettingsViewModel", "googleSignInClient: $googleSignInClient")
+
         val signInIntent = googleSignInClient?.signInIntent
+        Log.i("SettingsViewModel", "signInIntent: $signInIntent")
+
         if (signInIntent != null) {
+            Log.i("SettingsViewModel", "Launching Google sign-in intent")
+            Log.i("SettingsViewModel", "Intent extras: ${signInIntent.extras}")
             launcher.launch(signInIntent)
+        } else {
+            Log.e("SettingsViewModel", "Google sign-in intent is null - client setup failed!")
         }
+        Log.i("SettingsViewModel", "=== GOOGLE SIGN-IN DEBUG END ===")
     }
 
     fun handleGoogleSignInResult(data: Intent?) {
+        Log.i("SettingsViewModel", "handleGoogleSignInResult called with data: $data")
         try {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             val account = task.getResult(ApiException::class.java)
+            Log.i("SettingsViewModel", "Google sign in successful: ${account?.email}")
+            Log.i("SettingsViewModel", "Account scopes: ${account?.grantedScopes}")
+            Log.i("SettingsViewModel", "Account ID token: ${account?.idToken != null}")
+            Log.i("SettingsViewModel", "Account server auth code: ${account?.serverAuthCode != null}")
             _uiState.value = _uiState.value.copy(
                 isGoogleSignedIn = true,
                 googleUserEmail = account?.email
             )
         } catch (e: ApiException) {
-            Log.w("SettingsViewModel", "Google sign in failed", e)
+            Log.e("SettingsViewModel", "Google sign in failed with ApiException:")
+            Log.e("SettingsViewModel", "  Status code: ${e.statusCode}")
+            Log.e("SettingsViewModel", "  Status message: ${e.status?.statusMessage}")
+            Log.e("SettingsViewModel", "  Exception message: ${e.message}")
+            Log.e("SettingsViewModel", "  Common status codes:")
+            Log.e("SettingsViewModel", "    7 = NETWORK_ERROR")
+            Log.e("SettingsViewModel", "    8 = INTERNAL_ERROR")
+            Log.e("SettingsViewModel", "    10 = DEVELOPER_ERROR")
+            Log.e("SettingsViewModel", "    12500 = SIGN_IN_CANCELLED")
+            Log.e("SettingsViewModel", "    12501 = SIGN_IN_CURRENTLY_IN_PROGRESS")
+            Log.e("SettingsViewModel", "    12502 = SIGN_IN_FAILED")
+            _uiState.value = _uiState.value.copy(
+                isGoogleSignedIn = false,
+                googleUserEmail = null
+            )
+        } catch (e: Exception) {
+            Log.e("SettingsViewModel", "Unexpected error during Google sign in", e)
             _uiState.value = _uiState.value.copy(
                 isGoogleSignedIn = false,
                 googleUserEmail = null
@@ -101,7 +143,9 @@ class SettingsViewModel @Inject constructor(
         googleSignInClient?.signOut()?.addOnCompleteListener {
             _uiState.value = _uiState.value.copy(
                 isGoogleSignedIn = false,
-                googleUserEmail = null
+                googleUserEmail = null,
+                backupStatus = "",
+                restoreStatus = ""
             )
         }
     }
@@ -133,5 +177,31 @@ class SettingsViewModel @Inject constructor(
      */
     fun clearAchievements() {
         _newAchievements.value = emptyList()
+    }
+
+    /**
+     * Trigger backup to Google Drive
+     */
+    fun triggerBackup() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(backupStatus = "Backing up...")
+            val result = backupManager.performBackup()
+            _uiState.value = _uiState.value.copy(
+                backupStatus = result.getOrNull() ?: "Backup failed: ${result.exceptionOrNull()?.message}"
+            )
+        }
+    }
+
+    /**
+     * Trigger restore from Google Drive
+     */
+    fun triggerRestore() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(restoreStatus = "Restoring...")
+            val result = backupManager.performRestore()
+            _uiState.value = _uiState.value.copy(
+                restoreStatus = result.getOrNull() ?: "Restore failed: ${result.exceptionOrNull()?.message}"
+            )
+        }
     }
 }
