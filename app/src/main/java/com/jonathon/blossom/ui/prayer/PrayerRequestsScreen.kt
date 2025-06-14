@@ -48,6 +48,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jonathon.blossom.ui.components.AchievementCelebrationManager
@@ -225,38 +226,82 @@ fun PrayerRequestsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.FavoriteBorder,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
+                        // Animated floating effect for the icon
+                        val infiniteTransition = rememberInfiniteTransition(label = "prayer_empty")
+                        val offsetY by infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = -6f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(3000, easing = EaseInOutSine),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "prayer_float"
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (searchQuery.isNotEmpty()) {
-                                "No prayers match your search"
-                            } else {
-                                when (selectedTab) {
-                                    0 -> "No active prayer requests"
-                                    1 -> "No answered prayers yet"
-                                    else -> "No prayer requests"
-                                }
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                        if (searchQuery.isEmpty() && selectedTab == 0) {
-                            // 🎯 ONLY show "add prayer" message on Active tab
-                            Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Beautiful gradient background circle
+                        Box(
+                            modifier = Modifier
+                                .size(110.dp)
+                                .offset(y = offsetY.dp)
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.05f)
+                                        )
+                                    ),
+                                    shape = RoundedCornerShape(55.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = "Tap + to add your first prayer",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                text = if (searchQuery.isNotEmpty()) "🔍" else 
+                                       when (selectedTab) {
+                                           0 -> "🙏"  // Active prayers
+                                           1 -> "✨"  // Answered prayers
+                                           else -> "💝" // All prayers
+                                       },
+                                fontSize = 44.sp
                             )
                         }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Text(
+                            text = if (searchQuery.isNotEmpty()) {
+                                "No matches found"
+                            } else {
+                                when (selectedTab) {
+                                    0 -> "Begin Your Prayer Journey"
+                                    1 -> "Answered Prayers Await"
+                                    else -> "Prayer List Empty"
+                                }
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = if (searchQuery.isNotEmpty()) {
+                                "Try different search terms"
+                            } else {
+                                when (selectedTab) {
+                                    0 -> "Share your heart's desires and watch them unfold"
+                                    1 -> "Completed prayers will appear here as beautiful testimonies"
+                                    else -> "Add prayer requests to see them here"
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.outline,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp
+                        )
                     }
                 }
             } else {

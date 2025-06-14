@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -55,6 +56,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import com.jonathon.blossom.ui.components.EntryActionBottomSheet
 import com.jonathon.blossom.ui.components.JournalActions
 
@@ -237,43 +240,78 @@ fun JournalListScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-            }
-            entries.isEmpty() -> {
+            }            entries.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MenuBook,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
+                        // Animated floating effect for the icon
+                        val infiniteTransition = rememberInfiniteTransition(label = "journal_empty")
+                        val offsetY by infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = -8f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(2500, easing = EaseInOutSine),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "journal_float"
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = if (searchQuery.isNotEmpty()) {
-                                "No entries match your search"
-                            } else {
-                                "No journal entries yet"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                        if (searchQuery.isEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Beautiful gradient background circle
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .offset(y = offsetY.dp)
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f)
+                                        )
+                                    ),
+                                    shape = RoundedCornerShape(50.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = "Tap + to create your first entry",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                text = if (searchQuery.isNotEmpty()) "🔍" else "📖",
+                                fontSize = 40.sp
                             )
                         }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Text(
+                            text = if (searchQuery.isNotEmpty()) {
+                                "No matches found"
+                            } else {
+                                "Your Story Begins Here"
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = if (searchQuery.isNotEmpty()) {
+                                "Try adjusting your search terms"
+                            } else {
+                                "Capture your thoughts, prayers, and spiritual journey"
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.outline,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
+                        )
                     }
                 }
-            }            else -> {
+            }else -> {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier

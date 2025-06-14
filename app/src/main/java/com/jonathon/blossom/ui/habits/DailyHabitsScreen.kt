@@ -57,6 +57,14 @@ import androidx.compose.ui.unit.sp
 import com.jonathon.blossom.ui.components.EntryActionBottomSheet
 import com.jonathon.blossom.ui.components.HintCard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.graphicsLayer
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -100,26 +108,58 @@ fun DailyHabitsScreen(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(32.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                    // Animated floating effect for the icon
+                    val infiniteTransition = rememberInfiniteTransition(label = "empty_state")
+                    val offsetY by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = -10f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000, easing = EaseInOutSine),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "float_animation"
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Beautiful gradient background circle
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .offset(y = offsetY.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(60.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "🌱",
+                            fontSize = 48.sp
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
                     Text(
-                        "No habits yet",
-                        style = MaterialTheme.typography.titleMedium,
+                        "Begin Your Journey",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Tap the + button to add your first spiritual habit",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "Create your first spiritual habit and watch your faith blossom",
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp
                     )
                 }
             }
@@ -620,12 +660,65 @@ fun HabitProgressSummary(habits: List<DailyHabit>) {
                     color = MaterialTheme.colorScheme.primary
                 )
             } else {
-                Text(
-                    text = "$completionPercentage%",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                // Circular Progress Ring
+                val animatedProgress by animateFloatAsState(
+                    targetValue = completionPercentage / 100f,
+                    animationSpec = tween(durationMillis = 1000, easing = EaseOutCubic),
+                    label = "progress_animation"
                 )
+                
+                // Get theme colors outside of Canvas
+                val primaryColor = MaterialTheme.colorScheme.primary
+                
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(80.dp)
+                ) {
+                    Canvas(modifier = Modifier.size(80.dp)) {
+                        val strokeWidth = 8.dp.toPx()
+                        val radius = (size.minDimension - strokeWidth) / 2
+                        val center = Offset(size.width / 2, size.height / 2)
+                        
+                        // Background circle
+                        drawCircle(
+                            color = Color.Gray.copy(alpha = 0.2f),
+                            radius = radius,
+                            center = center,
+                            style = Stroke(
+                                width = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                        )
+                        
+                        // Progress arc
+                        if (animatedProgress > 0) {
+                            drawArc(
+                                color = primaryColor,
+                                startAngle = -90f,
+                                sweepAngle = 360f * animatedProgress,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    center.x - radius,
+                                    center.y - radius
+                                ),
+                                size = Size(radius * 2, radius * 2),
+                                style = Stroke(
+                                    width = strokeWidth,
+                                    cap = StrokeCap.Round
+                                )
+                            )
+                        }
+                    }
+                    
+                    Text(
+                        text = "$completionPercentage%",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
                     text = "Daily Progress",
@@ -743,22 +836,12 @@ fun HabitCompletionCard(
             defaultElevation = if (habit.isCompleted) 6.dp else 2.dp
         )
     ) {
-        // Beautiful gradient background for completed habits
+        // Beautiful gradient background for all habits
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = if (habit.isCompleted) {
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f),
-                                Color.Transparent
-                            )
-                        )
-                    } else {
-                        Brush.linearGradient(colors = listOf(Color.Transparent, Color.Transparent))
-                    }
+                    brush = getHabitGradient(habit.isCompleted, habit.streakCount)
                 )
         ) {
             Row(
@@ -844,15 +927,46 @@ fun HabitCompletionToggle(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Completion animation with bounce
+    val completionScale by animateFloatAsState(
+        targetValue = if (isCompleted) 1.0f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "completion_bounce"
+    )
+    
+    // Color animation
+    val iconColor by animateColorAsState(
+        targetValue = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        animationSpec = tween(300),
+        label = "icon_color"
+    )
+    
+    // Rotation animation for completion
+    val rotation by animateFloatAsState(
+        targetValue = if (isCompleted) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "completion_rotation"
+    )
+    
     IconButton(
         onClick = onToggle,
-        modifier = modifier
+        modifier = modifier.scale(completionScale)
     ) {
         Icon(
             imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
             contentDescription = "Toggle completion",
-            tint = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-            modifier = Modifier.size(32.dp)
+            tint = iconColor,
+            modifier = Modifier
+                .size(32.dp)
+                .graphicsLayer {
+                    rotationZ = if (isCompleted) rotation else 0f
+                }
         )
     }
 }
@@ -1032,6 +1146,63 @@ fun HabitDescriptionDialog(
             },
             containerColor = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.large
+        )
+    }
+}
+
+/**
+ * 🎨 HABIT GRADIENT SYSTEM
+ * Beautiful theme-reactive gradients matching prayer card style
+ */
+@Composable
+private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiaryContainer
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    
+    return if (isCompleted) {
+        // Completion gradients with streak-based intensity (matching prayer style)
+        when {
+            streakCount >= 7 -> {
+                // Amazing streak! Special celebratory gradient (like answered prayers)
+                Brush.linearGradient(
+                    colors = listOf(
+                        tertiaryColor.copy(alpha = 0.2f),
+                        primaryColor.copy(alpha = 0.08f),
+                        surfaceColor.copy(alpha = 0.02f)
+                    )
+                )
+            }
+            streakCount >= 3 -> {
+                // Good streak! Enhanced gradient (like high priority)
+                Brush.linearGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.15f),
+                        secondaryColor.copy(alpha = 0.10f),
+                        surfaceColor.copy(alpha = 0.02f)
+                    )
+                )
+            }
+            else -> {
+                // Basic completion gradient (like medium priority)
+                Brush.linearGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.12f),
+                        primaryColor.copy(alpha = 0.08f),
+                        surfaceColor.copy(alpha = 0.02f)
+                    )
+                )
+            }
+        }
+    } else {
+        // Subtle gradient for incomplete habits (like low priority)
+        Brush.linearGradient(
+            colors = listOf(
+                primaryColor.copy(alpha = 0.10f),
+                primaryColor.copy(alpha = 0.06f),
+                surfaceColor.copy(alpha = 0.02f)
+            )
         )
     }
 }
