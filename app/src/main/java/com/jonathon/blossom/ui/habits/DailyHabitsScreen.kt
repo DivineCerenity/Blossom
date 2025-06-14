@@ -1172,11 +1172,11 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
                 // Amazing streak! Special celebratory gradient (like answered prayers)
                 Brush.linearGradient(
                     colors = listOf(
-                        tertiaryColor.copy(alpha = 0.30f),
-                        primaryColor.copy(alpha = 0.25f),
-                        Color(0xFFFFD700).copy(alpha = 0.15f), // Gold accent
-                        primaryColor.copy(alpha = 0.20f),
-                        surfaceColor.copy(alpha = 0.05f)
+                        tertiaryColor.copy(alpha = 0.45f),
+                        primaryColor.copy(alpha = 0.35f),
+                        Color(0xFFFFD700).copy(alpha = 0.25f), // Gold accent
+                        primaryColor.copy(alpha = 0.30f),
+                        surfaceColor.copy(alpha = 0.10f)
                     )
                 )
             }
@@ -1184,11 +1184,11 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
                 // Great streak! Enhanced achievement gradient
                 Brush.linearGradient(
                     colors = listOf(
-                        secondaryColor.copy(alpha = 0.25f),
-                        primaryColor.copy(alpha = 0.20f),
-                        tertiaryColor.copy(alpha = 0.15f),
-                        secondaryColor.copy(alpha = 0.18f),
-                        surfaceColor.copy(alpha = 0.05f)
+                        secondaryColor.copy(alpha = 0.40f),
+                        primaryColor.copy(alpha = 0.30f),
+                        tertiaryColor.copy(alpha = 0.25f),
+                        secondaryColor.copy(alpha = 0.28f),
+                        surfaceColor.copy(alpha = 0.10f)
                     )
                 )
             }
@@ -1196,10 +1196,10 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
                 // Building streak! Motivating gradient
                 Brush.linearGradient(
                     colors = listOf(
-                        primaryColor.copy(alpha = 0.22f),
-                        secondaryColor.copy(alpha = 0.18f),
-                        primaryColor.copy(alpha = 0.15f),
-                        surfaceColor.copy(alpha = 0.05f)
+                        primaryColor.copy(alpha = 0.35f),
+                        secondaryColor.copy(alpha = 0.28f),
+                        primaryColor.copy(alpha = 0.25f),
+                        surfaceColor.copy(alpha = 0.10f)
                     )
                 )
             }
@@ -1207,10 +1207,10 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
                 // Completed today! Gentle celebration gradient
                 Brush.linearGradient(
                     colors = listOf(
+                        primaryColor.copy(alpha = 0.30f),
+                        tertiaryColor.copy(alpha = 0.25f),
                         primaryColor.copy(alpha = 0.20f),
-                        tertiaryColor.copy(alpha = 0.15f),
-                        primaryColor.copy(alpha = 0.12f),
-                        surfaceColor.copy(alpha = 0.05f)
+                        surfaceColor.copy(alpha = 0.10f)
                     )
                 )
             }
@@ -1219,10 +1219,10 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
         // Not completed - Subtle, encouraging gradient
         Brush.linearGradient(
             colors = listOf(
-                primaryColor.copy(alpha = 0.15f),
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.10f),
-                primaryColor.copy(alpha = 0.08f),
-                surfaceColor.copy(alpha = 0.05f)
+                primaryColor.copy(alpha = 0.12f),
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
+                primaryColor.copy(alpha = 0.06f),
+                surfaceColor.copy(alpha = 0.03f)
             )
         )
     }

@@ -47,7 +47,7 @@ fun FullScreenImageViewer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.9f))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
         ) {
             // Simple Image Pager - No zoom, just swipe
             HorizontalPager(
@@ -80,14 +80,14 @@ fun FullScreenImageViewer(
                 if (imageUrls.size > 1) {
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.Black.copy(alpha = 0.6f)
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                         ),
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
                             text = "${pagerState.currentPage + 1} of ${imageUrls.size}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -102,14 +102,14 @@ fun FullScreenImageViewer(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                             CircleShape
                         )
                 ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -130,9 +130,9 @@ fun FullScreenImageViewer(
                                 .clip(CircleShape)
                                 .background(
                                     if (index == pagerState.currentPage) {
-                                        Color.White
+                                        MaterialTheme.colorScheme.primary
                                     } else {
-                                        Color.White.copy(alpha = 0.4f)
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
                                     }
                                 )
                         )

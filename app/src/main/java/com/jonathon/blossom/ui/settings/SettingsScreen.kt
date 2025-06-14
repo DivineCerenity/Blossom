@@ -189,9 +189,9 @@ fun DarkModeSection(
                 onCheckedChange = { onToggleDarkMode() },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = if (isDarkMode) Color.White else MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = if (isDarkMode) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    checkedTrackColor = if (isDarkMode) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                    uncheckedThumbColor = if (isDarkMode) Color.Gray else Color.DarkGray,
+                    uncheckedTrackColor = if (isDarkMode) Color.Gray.copy(alpha = 0.3f) else Color.DarkGray.copy(alpha = 0.3f)
                 )
             )
         }
@@ -258,7 +258,13 @@ fun ThemeOption(
     ) {
         RadioButton(
             selected = isSelected,
-            onClick = onSelected
+            onClick = onSelected,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color.White,
+                unselectedColor = Color.Gray,
+                disabledSelectedColor = Color.White.copy(alpha = 0.5f),
+                disabledUnselectedColor = Color.Gray.copy(alpha = 0.5f)
+            )
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {

@@ -350,7 +350,7 @@ fun LoadingDots(
 @Composable
 fun SuccessCheckmark(
     modifier: Modifier = Modifier,
-    color: Color = Color.Green,
+    color: Color = MaterialTheme.colorScheme.primary,
     isVisible: Boolean = false
 ) {
     val scale by animateFloatAsState(
@@ -384,7 +384,7 @@ fun SuccessCheckmark(
     ) {
         Text(
             text = "✓",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.titleMedium
         )
     }
