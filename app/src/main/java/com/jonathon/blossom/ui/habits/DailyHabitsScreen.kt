@@ -826,11 +826,7 @@ fun HabitCompletionCard(
                 onLongClick = onLongPress
             ),
         colors = CardDefaults.cardColors(
-            containerColor = if (habit.isCompleted) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (habit.isCompleted) 6.dp else 2.dp
@@ -841,8 +837,10 @@ fun HabitCompletionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = getHabitGradient(habit.isCompleted, habit.streakCount)
+                    brush = getHabitGradient(habit.isCompleted, habit.streakCount),
+                    shape = RoundedCornerShape(12.dp)
                 )
+                .clip(RoundedCornerShape(12.dp))
         ) {
             Row(
                 modifier = Modifier
@@ -1153,6 +1151,12 @@ fun HabitDescriptionDialog(
 /**
  * 🎨 HABIT GRADIENT SYSTEM
  * Beautiful theme-reactive gradients matching prayer card style
+ * Streak & Completion gradient hierarchy:
+ * - Not completed: Subtle, encouraging gradient
+ * - Completed today (no streak): Gentle celebration gradient
+ * - Small streak (2-4 days): Warm, motivating gradient
+ * - Medium streak (5-6 days): Achievement-focused gradient
+ * - Amazing streak (7+ days): Special celebratory gradient
  */
 @Composable
 private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
@@ -1160,48 +1164,65 @@ private fun getHabitGradient(isCompleted: Boolean, streakCount: Int): Brush {
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val tertiaryColor = MaterialTheme.colorScheme.tertiaryContainer
     val surfaceColor = MaterialTheme.colorScheme.surface
-    
+
     return if (isCompleted) {
-        // Completion gradients with streak-based intensity (matching prayer style)
+        // Completion gradients with streak-based intensity
         when {
             streakCount >= 7 -> {
                 // Amazing streak! Special celebratory gradient (like answered prayers)
                 Brush.linearGradient(
                     colors = listOf(
-                        tertiaryColor.copy(alpha = 0.2f),
-                        primaryColor.copy(alpha = 0.08f),
-                        surfaceColor.copy(alpha = 0.02f)
+                        tertiaryColor.copy(alpha = 0.30f),
+                        primaryColor.copy(alpha = 0.25f),
+                        Color(0xFFFFD700).copy(alpha = 0.15f), // Gold accent
+                        primaryColor.copy(alpha = 0.20f),
+                        surfaceColor.copy(alpha = 0.05f)
                     )
                 )
             }
-            streakCount >= 3 -> {
-                // Good streak! Enhanced gradient (like high priority)
+            streakCount >= 5 -> {
+                // Great streak! Enhanced achievement gradient
                 Brush.linearGradient(
                     colors = listOf(
+                        secondaryColor.copy(alpha = 0.25f),
+                        primaryColor.copy(alpha = 0.20f),
+                        tertiaryColor.copy(alpha = 0.15f),
+                        secondaryColor.copy(alpha = 0.18f),
+                        surfaceColor.copy(alpha = 0.05f)
+                    )
+                )
+            }
+            streakCount >= 2 -> {
+                // Building streak! Motivating gradient
+                Brush.linearGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.22f),
+                        secondaryColor.copy(alpha = 0.18f),
                         primaryColor.copy(alpha = 0.15f),
-                        secondaryColor.copy(alpha = 0.10f),
-                        surfaceColor.copy(alpha = 0.02f)
+                        surfaceColor.copy(alpha = 0.05f)
                     )
                 )
             }
             else -> {
-                // Basic completion gradient (like medium priority)
+                // Completed today! Gentle celebration gradient
                 Brush.linearGradient(
                     colors = listOf(
+                        primaryColor.copy(alpha = 0.20f),
+                        tertiaryColor.copy(alpha = 0.15f),
                         primaryColor.copy(alpha = 0.12f),
-                        primaryColor.copy(alpha = 0.08f),
-                        surfaceColor.copy(alpha = 0.02f)
+                        surfaceColor.copy(alpha = 0.05f)
                     )
                 )
             }
         }
     } else {
-        // Subtle gradient for incomplete habits (like low priority)
+        // Not completed - Subtle, encouraging gradient
         Brush.linearGradient(
             colors = listOf(
-                primaryColor.copy(alpha = 0.10f),
-                primaryColor.copy(alpha = 0.06f),
-                surfaceColor.copy(alpha = 0.02f)
+                primaryColor.copy(alpha = 0.15f),
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.10f),
+                primaryColor.copy(alpha = 0.08f),
+                surfaceColor.copy(alpha = 0.05f)
             )
         )
     }
