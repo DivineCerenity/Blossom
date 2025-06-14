@@ -116,6 +116,14 @@ fun SettingsScreen(
                 )
             }
 
+            // Habit Reset Time Section
+            item {
+                HabitResetTimeSection(
+                    selectedResetTime = uiState.habitResetTime,
+                    onResetTimeChanged = viewModel::updateHabitResetTime
+                )
+            }
+
             // App Info Section
             item {
                 AppInfoSection(onNavigateToAbout = onNavigateToAbout)
@@ -436,6 +444,90 @@ fun GoogleSignInSection(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HabitResetTimeSection(
+    selectedResetTime: Int,
+    onResetTimeChanged: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Habit Reset Time",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = "Select the time when your daily habits should reset.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            
+            var expanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it }
+            ) {
+                OutlinedTextField(
+                    value = formatHour(selectedResetTime),
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Reset Time") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    (0..23).forEach { hour ->
+                        DropdownMenuItem(
+                            text = { Text(formatHour(hour)) },
+                            onClick = {
+                                onResetTimeChanged(hour)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun formatHour(hour: Int): String {
+    return if (hour == 0) {
+        "12:00 AM (Midnight)"
+    } else if (hour == 12) {
+        "12:00 PM (Noon)"
+    } else if (hour < 12) {
+        "$hour:00 AM"
+    } else {
+        "${hour - 12}:00 PM"
     }
 }
 

@@ -204,4 +204,14 @@ class SettingsViewModel @Inject constructor(
             )
         }
     }
+    
+    /**
+     * Update the habit reset time
+     */
+    fun updateHabitResetTime(hour: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveHabitResetTime(hour)
+            _uiState.value = _uiState.value.copy(habitResetTime = hour)
+        }
+    }
 }

@@ -122,6 +122,10 @@ fun DailyHabitsScreen(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        HintCard(text = "💡 Track your daily spiritual habits here! Tap + to get started.")
+                    }
                 }
             }
         } else {

@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -55,6 +54,7 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
+import androidx.compose.foundation.layout.imePadding
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -69,8 +69,8 @@ fun AddEditJournalScreen(
     onSetFeaturedImage: (String) -> Unit,
     saveJournalEntry: () -> Unit,
     eventHandled: () -> Unit,
-    onNavigateBack: () -> Unit, // <-- Add this parameter
-    isEditing: Boolean = false // <-- Add a default value if not provided by the caller
+    onNavigateBack: () -> Unit,
+    isEditing: Boolean = false
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -197,81 +197,88 @@ fun AddEditJournalScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        val scrollState = rememberScrollState()
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = { onTitleChanged(it) },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = uiState.content,
-                onValueChange = { onContentChanged(it) },
-                label = { Text("What's on your mind?") },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 150.dp),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Sentences
-                )
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("How are you feeling?", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            MoodSelector(
-                selectedMood = uiState.mood,
-                onMoodSelected = { onMoodSelected(it) }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Elegant Image Manager
-            ElegantImageManager(
-                imageUrls = uiState.imageUrls,
-                featuredImageUrl = uiState.featuredImageUrl,
-                onAddImage = { showImageSourceDialog = true },
-                onDeleteImage = onDeleteImage,
-                onSetFeaturedImage = onSetFeaturedImage,
-                onSaveToGallery = { imageUrl ->
-                    saveImageToGallery(imageUrl)
-                },
-                onImageClick = { imageUrls, index ->
-                    fullScreenImageIndex = index
-                    showFullScreenViewer = true
-                }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Save Button - like prayer dialog
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
             ) {
-                TextButton(onClick = onNavigateBack) {
-                    Text("Cancel")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { saveJournalEntry() },
-                    enabled = uiState.title.isNotBlank()
-                ) {
-                    Text(if (isEditing) "Save Changes" else "Save Entry")
-                }
-            }
+                OutlinedTextField(
+                    value = uiState.title,
+                    onValueChange = { onTitleChanged(it) },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences
+                    )
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = uiState.content,
+                    onValueChange = { onContentChanged(it) },
+                    label = { Text("What's on your mind?") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 150.dp, max = 300.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        capitalization = KeyboardCapitalization.Sentences
+                    ),
+                    maxLines = 10
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("How are you feeling?", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                MoodSelector(
+                    selectedMood = uiState.mood,
+                    onMoodSelected = { onMoodSelected(it) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
+                // Elegant Image Manager
+                ElegantImageManager(
+                    imageUrls = uiState.imageUrls,
+                    featuredImageUrl = uiState.featuredImageUrl,
+                    onAddImage = { showImageSourceDialog = true },
+                    onDeleteImage = onDeleteImage,
+                    onSetFeaturedImage = onSetFeaturedImage,
+                    onSaveToGallery = { imageUrl ->
+                        saveImageToGallery(imageUrl)
+                    },
+                    onImageClick = { imageUrls, index ->
+                        fullScreenImageIndex = index
+                        showFullScreenViewer = true
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Save Button - like prayer dialog
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onNavigateBack) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { saveJournalEntry() },
+                        enabled = uiState.title.isNotBlank()
+                    ) {
+                        Text(if (isEditing) "Save Changes" else "Save Entry")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
+            }
         }
     }
 

@@ -18,6 +18,7 @@ class SettingsRepository @Inject constructor(
 
     private val _selectedTheme = MutableStateFlow(loadSelectedTheme())
     private val _isDarkMode = MutableStateFlow(loadDarkMode())
+    private val _habitResetTime = MutableStateFlow(loadHabitResetTime())
 
     private fun loadSelectedTheme(): AppTheme {
         val themeName = sharedPreferences.getString("selected_theme", AppTheme.TWILIGHT_MYSTIQUE.name)
@@ -32,12 +33,20 @@ class SettingsRepository @Inject constructor(
         return sharedPreferences.getBoolean("dark_mode", false)
     }
 
+    private fun loadHabitResetTime(): Int {
+        return sharedPreferences.getInt("habit_reset_time", 0)
+    }
+
     fun getSelectedTheme(): Flow<AppTheme> {
         return _selectedTheme.asStateFlow()
     }
 
     fun getDarkMode(): Flow<Boolean> {
         return _isDarkMode.asStateFlow()
+    }
+
+    fun getHabitResetTime(): Flow<Int> {
+        return _habitResetTime.asStateFlow()
     }
 
     suspend fun saveSelectedTheme(theme: AppTheme) {
@@ -52,5 +61,12 @@ class SettingsRepository @Inject constructor(
             .putBoolean("dark_mode", isDarkMode)
             .apply()
         _isDarkMode.value = isDarkMode
+    }
+
+    suspend fun saveHabitResetTime(hour: Int) {
+        sharedPreferences.edit()
+            .putInt("habit_reset_time", hour)
+            .apply()
+        _habitResetTime.value = hour
     }
 }

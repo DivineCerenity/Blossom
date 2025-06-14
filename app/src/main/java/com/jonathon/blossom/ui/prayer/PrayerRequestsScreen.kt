@@ -39,12 +39,15 @@ import com.jonathon.blossom.ui.prayer.PrayerSortOption
 import com.jonathon.blossom.ui.prayer.EditPrayerRequestDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.jonathon.blossom.ui.components.EntryActionBottomSheet
 import com.jonathon.blossom.ui.components.PrayerActions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jonathon.blossom.ui.components.AchievementCelebrationManager
 import com.jonathon.blossom.ui.dashboard.DashboardViewModel
@@ -86,6 +89,9 @@ fun PrayerRequestsScreen(
     // 📱 BOTTOM SHEET STATE
     var showActionBottomSheet by remember { mutableStateOf(false) }
     var selectedPrayerForAction by remember { mutableStateOf<PrayerRequest?>(null) }
+
+    // Add this state variable at the top with other state variables
+    var showPrayerDetail by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -251,12 +257,12 @@ fun PrayerRequestsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (sortedPrayerRequests.isNotEmpty()) {
                         item {
-                            HintCard(text = "💡 Long press for options")
+                            HintCard(text = "💡 Tap to view • Long press for options")
                         }
                     }
                     itemsIndexed(sortedPrayerRequests, key = { _, prayer -> prayer.id }) { index, prayerRequest ->
@@ -297,7 +303,10 @@ fun PrayerRequestsScreen(
                                     this.alpha = alpha
                                 }
                                 .combinedClickable(
-                                    onClick = {},
+                                    onClick = {
+                                        selectedPrayerForAction = prayerRequest
+                                        showPrayerDetail = true
+                                    },
                                     onLongClick = {
                                         selectedPrayerForAction = prayerRequest
                                         showActionBottomSheet = true
@@ -390,6 +399,17 @@ fun PrayerRequestsScreen(
             achievements = newAchievements,
             onAllDismissed = {
                 viewModel.clearAchievements()
+            }
+        )
+    }
+
+    // Add this dialog composable after the other dialogs
+    if (showPrayerDetail && selectedPrayerForAction != null) {
+        PrayerRequestDetailDialog(
+            prayerRequest = selectedPrayerForAction!!,
+            onDismiss = {
+                showPrayerDetail = false
+                selectedPrayerForAction = null
             }
         )
     }
@@ -764,6 +784,116 @@ fun DailyVerseCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                             maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrayerRequestDetailDialog(
+    prayerRequest: PrayerRequest,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header with close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(prayerRequest.category.displayName) },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Title
+                Text(
+                    text = prayerRequest.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Date
+                Text(
+                    text = SimpleDateFormat("MMMM dd, yyyy h:mm a", Locale.getDefault())
+                        .format(Date(prayerRequest.createdDate)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Description
+                Text(
+                    text = prayerRequest.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Priority indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(getPriorityColor(prayerRequest.priority))
+                    )
+                    Text(
+                        text = "Priority: ${prayerRequest.priority.displayName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Answered status
+                if (prayerRequest.isAnswered) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Answered Prayer",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }

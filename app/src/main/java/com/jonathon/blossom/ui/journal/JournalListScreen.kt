@@ -274,7 +274,7 @@ fun JournalListScreen(
                 ) {
                     if (entries.isNotEmpty()) {
                         item {
-                            HintCard(text = "💡 Tap to read • Long press for options")
+HintCard(text = "💡 Tap to view • Long press for options")
                         }
                     }
                     itemsIndexed(
@@ -842,5 +842,3 @@ fun JournalEntryDetailDialog(
         }
     }
 }
-
-

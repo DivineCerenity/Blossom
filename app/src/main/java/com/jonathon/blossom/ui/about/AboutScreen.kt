@@ -132,11 +132,21 @@ fun AboutScreen(
                 }
             }
 
+            // ☁️ GOOGLE DRIVE BREAKTHROUGH
+            item {
+                AnimatedVisibility(
+                    visible = showContent,
+                    enter = fadeIn(animationSpec = tween(1000, delayMillis = 1400))
+                ) {
+                    GoogleDriveSection()
+                }
+            }
+
             // 🎉 FINAL CELEBRATION
             item {
                 AnimatedVisibility(
                     visible = showContent,
-                    enter = fadeIn(animationSpec = tween(1000, delayMillis = 1500))
+                    enter = fadeIn(animationSpec = tween(1000, delayMillis = 1600))
                 ) {
                     CelebrationSection()
                 }
@@ -244,13 +254,15 @@ private fun FeaturesSection() {
             "🌬️ 9 Professional Breathing Patterns" to "Including your custom 7-5-5 pattern",
             "🧠 13 Scientific Binaural Beats" to "1Hz to 40Hz covering all brainwave states",
             "🏆 Rock-Solid Milestone System" to "Perfect celebrations with beautiful popups",
+            "☁️ Complete Google Drive Backup" to "Photos, journals, prayers - everything restored perfectly",
             "🌙 Perfect Dark Mode" to "Flawless consistency across all screens",
             "📱 Professional Bottom Sheets" to "Elegant long-press actions",
-            "🎨 5 Beautiful Themes" to "Including your favorite Twilight Mystique",
+            "🎨 10 Beautiful Themes" to "Including your favorite Twilight Mystique",
             "⏰ Advanced Timer System" to "With breathing guides and visual effects",
             "📝 Journal & Prayer Management" to "With mood tracking and organization",
             "🎵 Professional Audio System" to "With crash protection and seamless looping",
-            "📊 Advanced Analytics" to "Comprehensive insights and progress tracking"
+            "📊 Advanced Analytics" to "Comprehensive insights and progress tracking",
+            "🏮 Beautiful Lantern Icon" to "Professional branding with spiritual symbolism"
         )
         
         features.forEach { (feature, description) ->
@@ -312,7 +324,7 @@ private fun AchievementVictorySection() {
 
         victories.forEach { (victory, description) ->
             VictoryItem(victory, description)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -339,16 +351,86 @@ private fun TechnicalSection() {
             "🏗️ Modern Architecture" to "MVVM with Compose & Hilt",
             "🎵 Advanced Audio Engine" to "Professional binaural beats system",
             "🏆 Perfect Milestone System" to "Context-aware with beautiful celebrations",
-            "🌈 Dynamic Theming" to "5 themes with gradient support",
+            "☁️ Google Drive Integration" to "OAuth, REST API, photo backup with content URIs",
+            "🌈 Dynamic Theming" to "10 themes with gradient support",
             "📱 Responsive UI" to "Beautiful animations & interactions",
             "💾 Robust Data Layer" to "Room database with migrations",
             "🔄 State Management" to "Clean, reactive architecture",
-            "🎯 Intelligent Context Separation" to "Features trigger milestones correctly"
+            "🎯 Intelligent Context Separation" to "Features trigger milestones correctly",
+            "🔐 Professional Authentication" to "Multi-client OAuth with proper token management"
         )
 
         achievements.forEach { (tech, description) ->
             TechItem(tech, description)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun GoogleDriveSection() {
+    SectionCard(
+        title = "☁️ Google Drive Backup Breakthrough!",
+        icon = null
+    ) {
+        Text(
+            text = "Today we achieved the impossible - a complete, professional-grade Google Drive backup system! After intense debugging and problem-solving, we now have flawless backup and restore functionality.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 24.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val driveAchievements = listOf(
+            "🔐 OAuth Authentication Mastery" to "Fixed DEVELOPER_ERROR with proper client IDs",
+            "🌐 Web + Android Client Setup" to "Perfect dual-client configuration for ID tokens",
+            "📤 Google Drive API Integration" to "Fixed upload endpoints and authentication flow",
+            "📸 Complete Photo Backup System" to "Content URI handling with Base64 encoding",
+            "🔄 Perfect Restore Functionality" to "All photo fields restored with correct paths",
+            "🎨 Beautiful Settings UI" to "Professional Google Drive section with no overflow",
+            "🏮 Lantern App Icon" to "Updated from generic icon to beautiful lantern design",
+            "🧪 Test User Configuration" to "Development-ready OAuth for personal use",
+            "💾 Database Path Updates" to "Proper URI management after photo restoration",
+            "✨ Professional Status Messages" to "Detailed feedback for backup/restore operations"
+        )
+
+        driveAchievements.forEach { (achievement, description) ->
+            DriveAchievementItem(achievement, description)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "🎯 MISSION ACCOMPLISHED! 🎯",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Complete backup/restore system with photos working flawlessly across all screens!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -497,8 +579,8 @@ private fun CollaborationStat(emoji: String, label: String) {
 
 @Composable
 private fun VictoryItem(victory: String, description: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             text = victory,
@@ -506,21 +588,23 @@ private fun VictoryItem(victory: String, description: String) {
                 fontWeight = FontWeight.Medium
             ),
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.weight(1.5f)
+            modifier = Modifier.fillMaxWidth(),
+            lineHeight = 16.sp
         )
     }
 }
 
 @Composable
 private fun TechItem(tech: String, description: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             text = tech,
@@ -528,13 +612,40 @@ private fun TechItem(tech: String, description: String) {
                 fontWeight = FontWeight.Medium
             ),
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.weight(1.5f)
+            modifier = Modifier.fillMaxWidth(),
+            lineHeight = 16.sp
+        )
+    }
+}
+
+@Composable
+private fun DriveAchievementItem(achievement: String, description: String) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = achievement,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1.2f)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            modifier = Modifier.weight(1.8f),
+            lineHeight = 18.sp
         )
     }
 }

@@ -141,7 +141,7 @@ fun EditPrayerRequestDialog(
                         },
                         enabled = title.isNotBlank()
                     ) {
-                        Text("Save Changes")
+                        Text("Save")
                     }
                 }
             }
