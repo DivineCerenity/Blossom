@@ -18,9 +18,8 @@ import com.jonathon.blossom.data.BlossomDatabase
 import com.jonathon.blossom.data.AnalyticsRepository
 
 class HabitReminderWorker(
-    private val context: Context,
-    params: WorkerParameters,
-    private val analyticsRepository: AnalyticsRepository
+    context: Context,
+    params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -36,7 +35,7 @@ class HabitReminderWorker(
 
         // Get database instance directly
         val database = Room.databaseBuilder(
-            context,
+            applicationContext,
             BlossomDatabase::class.java,
             "blossom_database"
         )
@@ -67,7 +66,11 @@ class HabitReminderWorker(
         if (!isTest) {
             // Create repository manually since this is a worker context
             // We already have a database instance created earlier, reuse it
-            val repository = DailyHabitRepository(habitDao, context, analyticsRepository)
+            val analyticsDao = database.analyticsDao()
+            val journalDao = database.journalDao()
+            val prayerDao = database.prayerRequestDao()
+            val analyticsRepository = AnalyticsRepository(analyticsDao, journalDao, prayerDao, applicationContext)
+            val repository = DailyHabitRepository(habitDao, applicationContext, analyticsRepository)
             repository.scheduleReminder(habit)
         }
 
@@ -87,24 +90,24 @@ class HabitReminderWorker(
                 setShowBadge(true)
             }
 
-            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            val notificationManager = applicationContext.getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     private fun showNotification(habit: DailyHabit) {
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         
         val pendingIntent = PendingIntent.getActivity(
-            context,
+            applicationContext,
             0,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Habit Reminder")
             .setContentText("Time to ${habit.title}!")
@@ -114,7 +117,7 @@ class HabitReminderWorker(
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }
