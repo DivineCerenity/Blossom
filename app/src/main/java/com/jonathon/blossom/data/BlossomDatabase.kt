@@ -15,9 +15,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DailyVerse::class,
         MeditationSession::class,  // 📊 NEW ANALYTICS ENTITIES
         DailyAnalytics::class,
-        Achievement::class
-    ],
-    version = 10,  // 📊 INCREMENTED VERSION FOR JOURNAL SCHEMA FIX
+        Achievement::class    ],
+    version = 11,  // 🏆 INCREMENTED VERSION FOR HABIT STREAK FIELDS
     exportSchema = false
 )
 abstract class BlossomDatabase : RoomDatabase() {
@@ -215,8 +214,15 @@ abstract class BlossomDatabase : RoomDatabase() {
                             `featuredImageUrl` TEXT,
                             `imageUrl` TEXT
                         )
-                    """.trimIndent())
-                }
+                    """.trimIndent())                }
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 🏆 ADD HABIT STREAK AND COMPLETION TRACKING FIELDS
+                database.execSQL("ALTER TABLE daily_habits ADD COLUMN longestStreak INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE daily_habits ADD COLUMN completionCount INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

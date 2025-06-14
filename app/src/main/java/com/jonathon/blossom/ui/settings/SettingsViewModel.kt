@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
 import com.google.android.gms.drive.Drive // 🔧 Uncommented to enable Drive API
+import com.jonathon.blossom.data.DailyHabitRepository
+import com.jonathon.blossom.notifications.DailyHabitResetScheduler
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,7 +30,9 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val analyticsRepository: AnalyticsRepository,
     @ApplicationContext private val context: Context,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    private val habitResetScheduler: DailyHabitResetScheduler,
+    private val habitRepository: DailyHabitRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -44,6 +48,10 @@ class SettingsViewModel @Inject constructor(
         loadSettings()
         setupGoogleSignInClient()
         checkGoogleSignInStatus()
+        // Schedule initial habit reset
+        viewModelScope.launch {
+            habitResetScheduler.scheduleReset()
+        }
     }
 
     private fun loadSettings() {
@@ -55,6 +63,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getDarkMode().collect { isDarkMode ->
                 _uiState.value = _uiState.value.copy(isDarkMode = isDarkMode)
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getHabitResetTime().collect { resetTime ->
+                _uiState.value = _uiState.value.copy(habitResetTime = resetTime)
             }
         }
     }
@@ -212,6 +225,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.saveHabitResetTime(hour)
             _uiState.value = _uiState.value.copy(habitResetTime = hour)
+            // Reschedule the daily reset with the new time
+            habitResetScheduler.scheduleReset()
         }
     }
 }

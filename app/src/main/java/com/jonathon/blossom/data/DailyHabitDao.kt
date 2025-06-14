@@ -18,12 +18,10 @@ interface DailyHabitDao {
     suspend fun insert(habit: DailyHabit)
 
     @Update
-    suspend fun update(habit: DailyHabit)
-
-    @Delete
+    suspend fun update(habit: DailyHabit)    @Delete
     suspend fun delete(habit: DailyHabit)
 
-    @Query("UPDATE daily_habits SET isCompleted = 0, lastCompletedDate = 0")
+    @Query("UPDATE daily_habits SET isCompleted = 0")
     suspend fun resetDailyHabits()
 
     @Query("UPDATE daily_habits SET streakCount = streakCount + 1 WHERE id = :habitId")

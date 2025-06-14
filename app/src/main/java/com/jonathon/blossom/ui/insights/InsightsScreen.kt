@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -38,12 +40,18 @@ fun InsightsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
 
-    // 📊 REFRESH DATA WHEN SCREEN BECOMES VISIBLE
+    // � SCROLL STATE MANAGEMENT - Always start at top when navigating to this screen
+    val listState = rememberLazyListState()
+
+    // �📊 REFRESH DATA WHEN SCREEN BECOMES VISIBLE
     LaunchedEffect(Unit) {
         viewModel.refreshData()
+        // Reset scroll position to top when screen is navigated to
+        listState.animateScrollToItem(0)
     }
     
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
@@ -434,7 +442,7 @@ fun WeeklyMeditationChart(weeklyData: WeeklyData) {
 
 /**
  * 🏆 MILESTONE SECTION
- * Display unlocked milestones - CLICKABLE to view all
+ * Display unlocked milestones organized by category - CLICKABLE to view all
  */
 @Composable
 fun MilestoneSection(
@@ -475,28 +483,141 @@ fun MilestoneSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val unlockedMilestones = achievements.filter { it.unlockedAt != null }
+            val unlockedAchievements = achievements.filter { it.unlockedAt != null }
 
-            if (unlockedMilestones.isEmpty()) {
+            if (unlockedAchievements.isEmpty()) {
                 Text(
-                    text = "Complete your first meditation to unlock milestones! 🌟",
+                    text = "Complete your first habit, meditation, journal, or prayer to unlock milestones! 🌟",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                unlockedMilestones.take(3).forEach { achievement ->
-                    AchievementItem(achievement = achievement)
-                    if (achievement != unlockedMilestones.last()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                // Group achievements by category
+                val categorizedAchievements = mutableListOf<Pair<String, List<Achievement>>>()
+                
+                // Meditation achievements
+                val meditationAchievements = unlockedAchievements.filter { 
+                    it.category in listOf(
+                        AchievementCategory.MEDITATION_COUNT,
+                        AchievementCategory.MEDITATION_STREAK,
+                        AchievementCategory.MEDITATION_TIME,
+                        AchievementCategory.MEDITATION_CONSISTENCY
+                    )
+                }
+                if (meditationAchievements.isNotEmpty()) {
+                    categorizedAchievements.add("🧘‍♂️ Meditation" to meditationAchievements)
+                }
+                
+                // Journal achievements
+                val journalAchievements = unlockedAchievements.filter { 
+                    it.category in listOf(
+                        AchievementCategory.JOURNAL_ENTRIES,
+                        AchievementCategory.JOURNAL_STREAK
+                    )
+                }
+                if (journalAchievements.isNotEmpty()) {
+                    categorizedAchievements.add("📝 Journal" to journalAchievements)
+                }
+                
+                // Prayer achievements
+                val prayerAchievements = unlockedAchievements.filter { 
+                    it.category in listOf(
+                        AchievementCategory.PRAYERS_ANSWERED,
+                        AchievementCategory.PRAYER_CONSISTENCY
+                    )
+                }
+                if (prayerAchievements.isNotEmpty()) {
+                    categorizedAchievements.add("🙏 Prayers" to prayerAchievements)
+                }
+                
+                // Habit achievements
+                val habitAchievements = unlockedAchievements.filter { 
+                    it.category in listOf(
+                        AchievementCategory.HABIT_STREAK,
+                        AchievementCategory.HABIT_COUNT,
+                        AchievementCategory.HABIT_COMEBACK,
+                        AchievementCategory.MULTI_HABIT_STREAK
+                    )
+                }
+                if (habitAchievements.isNotEmpty()) {
+                    categorizedAchievements.add("✅ Habits" to habitAchievements)
+                }
+                
+                // Other achievements
+                val otherAchievements = unlockedAchievements.filter { 
+                    it.category !in listOf(
+                        AchievementCategory.MEDITATION_COUNT,
+                        AchievementCategory.MEDITATION_STREAK,
+                        AchievementCategory.MEDITATION_TIME,
+                        AchievementCategory.MEDITATION_CONSISTENCY,
+                        AchievementCategory.JOURNAL_ENTRIES,
+                        AchievementCategory.JOURNAL_STREAK,
+                        AchievementCategory.PRAYERS_ANSWERED,
+                        AchievementCategory.PRAYER_CONSISTENCY,
+                        AchievementCategory.HABIT_STREAK,
+                        AchievementCategory.HABIT_COUNT,
+                        AchievementCategory.HABIT_COMEBACK,
+                        AchievementCategory.MULTI_HABIT_STREAK
+                    )
+                }
+                if (otherAchievements.isNotEmpty()) {
+                    categorizedAchievements.add("🌟 Other" to otherAchievements)
+                }
+
+                // Display categorized achievements
+                var totalShown = 0
+                val maxToShow = 6 // Show up to 6 achievements total
+                
+                categorizedAchievements.forEach { (categoryName, categoryAchievements) ->
+                    if (totalShown < maxToShow) {
+                        // Category header with elegant design
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        ) {
+                            Text(
+                                text = categoryName,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            
+                            // Elegant divider line
+                            HorizontalDivider(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                thickness = 1.dp
+                            )
+                        }
+                        
+                        // Show achievements in this category (up to 2 per category)
+                        val achievementsToShow = categoryAchievements.take(2.coerceAtMost(maxToShow - totalShown))
+                        achievementsToShow.forEach { achievement ->
+                            AchievementItem(achievement = achievement)
+                            totalShown++
+                            if (totalShown < maxToShow && achievement != achievementsToShow.last()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                        
+                        // Add spacing between categories if not the last category and not at limit
+                        if (totalShown < maxToShow && categoryName != categorizedAchievements.last().first) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
                     }
                 }
 
-                if (unlockedMilestones.size > 3) {
+                // Show total count if there are more achievements
+                if (unlockedAchievements.size > maxToShow) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "+${unlockedMilestones.size - 3} more milestones",
+                        text = "+${unlockedAchievements.size - maxToShow} more milestones",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
@@ -547,28 +668,49 @@ fun formatTotalTime(seconds: Int): String {
  */
 @Composable
 fun AchievementItem(achievement: Achievement) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
     ) {
-        Text(
-            text = achievement.icon,
-            fontSize = 24.sp
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Achievement icon with background
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = achievement.icon,
+                    fontSize = 24.sp
+                )
+            }
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = achievement.title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = achievement.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = achievement.title,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = achievement.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    lineHeight = 16.sp
+                )
+            }
         }
     }
 }

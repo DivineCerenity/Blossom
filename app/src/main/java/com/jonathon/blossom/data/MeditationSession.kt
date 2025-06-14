@@ -71,7 +71,12 @@ enum class AchievementCategory {
     MILESTONE_MASTER,
     DEDICATION_WARRIOR,
     MINDFULNESS_GURU,
-    SPIRITUAL_SEEKER
+    SPIRITUAL_SEEKER,
+    // --- Habit categories ---
+    HABIT_STREAK,
+    HABIT_COUNT,
+    HABIT_COMEBACK,
+    MULTI_HABIT_STREAK
 }
 
 /**

@@ -15,10 +15,12 @@ import com.jonathon.blossom.R
 import com.jonathon.blossom.data.DailyHabit
 import com.jonathon.blossom.data.DailyHabitRepository
 import com.jonathon.blossom.data.BlossomDatabase
+import com.jonathon.blossom.data.AnalyticsRepository
 
 class HabitReminderWorker(
     private val context: Context,
-    params: WorkerParameters
+    params: WorkerParameters,
+    private val analyticsRepository: AnalyticsRepository
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -48,7 +50,8 @@ class HabitReminderWorker(
             BlossomDatabase.MIGRATION_6_7, 
             BlossomDatabase.MIGRATION_7_8, 
             BlossomDatabase.MIGRATION_8_9, 
-            BlossomDatabase.MIGRATION_9_10
+            BlossomDatabase.MIGRATION_9_10,
+            BlossomDatabase.MIGRATION_10_11
         )
         .build()
         
@@ -62,7 +65,9 @@ class HabitReminderWorker(
 
         // Only schedule the next reminder if this is not a test notification
         if (!isTest) {
-            val repository = DailyHabitRepository(habitDao, context)
+            // Create repository manually since this is a worker context
+            // We already have a database instance created earlier, reuse it
+            val repository = DailyHabitRepository(habitDao, context, analyticsRepository)
             repository.scheduleReminder(habit)
         }
 

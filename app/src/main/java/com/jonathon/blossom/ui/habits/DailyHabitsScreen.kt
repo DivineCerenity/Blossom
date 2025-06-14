@@ -5,9 +5,15 @@ import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,18 +42,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.window.Dialog
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.draw.scale
+import com.jonathon.blossom.ui.components.AchievementCelebrationManager
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
@@ -63,6 +66,7 @@ fun DailyHabitsScreen(
     viewModel: DailyHabitsViewModel = hiltViewModel()
 ) {
     val habits by viewModel.habits.collectAsState(initial = emptyList())
+    val newAchievements by viewModel.newAchievements.collectAsState() // 🏆 Achievement celebration
     var showTimePicker by remember { mutableStateOf(false) }
     var selectedHabitId by remember { mutableStateOf<Int?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -72,24 +76,19 @@ fun DailyHabitsScreen(
     var showDescriptionDialog by remember { mutableStateOf(false) }
     var selectedHabitForDescription by remember { mutableStateOf<DailyHabit?>(null) }
 
+    // 📱 SCROLL STATE MANAGEMENT - Always start at top when navigating to this screen
+    val listState = rememberLazyListState()
+    
+    // Reset scroll position to top when screen is navigated to
+    LaunchedEffect(Unit) {
+        listState.animateScrollToItem(0)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadHabits()
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Daily Habits",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (habits.isEmpty()) {
@@ -122,10 +121,6 @@ fun DailyHabitsScreen(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        HintCard(text = "💡 Track your daily spiritual habits here! Tap + to get started.")
-                    }
                 }
             }
         } else {
@@ -148,6 +143,7 @@ fun DailyHabitsScreen(
                     selectedHabitForAction = habit
                     showActionBottomSheet = true
                 },
+                listState = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
@@ -239,6 +235,16 @@ fun DailyHabitsScreen(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    // 🏆 HABIT ACHIEVEMENT CELEBRATION
+    if (newAchievements.isNotEmpty()) {
+        AchievementCelebrationManager(
+            achievements = newAchievements,
+            onAllDismissed = {
+                viewModel.clearAchievements()
             }
         )
     }
@@ -519,12 +525,15 @@ fun HabitCompletionDashboard(
     onHabitToggle: (DailyHabit) -> Unit,
     onHabitClick: (DailyHabit) -> Unit,
     onHabitLongPress: (DailyHabit) -> Unit,
+    listState: LazyListState = rememberLazyListState(),
     modifier: Modifier = Modifier
 ) {
+
     LazyColumn(
+        state = listState, // Attach the scroll state to the LazyColumn
         modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        contentPadding = PaddingValues(top = 0.dp, bottom = 16.dp)
     ) {
         // 📊 Daily Progress Summary
         item {
@@ -581,7 +590,7 @@ fun HabitProgressSummary(habits: List<DailyHabit>) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Progress Ring or Emoji
@@ -600,20 +609,20 @@ fun HabitProgressSummary(habits: List<DailyHabit>) {
                 
                 Text(
                     text = "🎉",
-                    fontSize = (32 * scale).sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    fontSize = (24 * scale).sp,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
                 
                 Text(
                     text = "Perfect Day!",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
             } else {
                 Text(
                     text = "$completionPercentage%",
-                    style = MaterialTheme.typography.displayMedium,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -625,7 +634,7 @@ fun HabitProgressSummary(habits: List<DailyHabit>) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Progress Details
             Row(
@@ -653,7 +662,7 @@ fun HabitProgressSummary(habits: List<DailyHabit>) {
 
             // Motivational Message
             if (totalCount > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = getMotivationalMessage(completionPercentage, completedCount, totalCount),
                     style = MaterialTheme.typography.bodyMedium,

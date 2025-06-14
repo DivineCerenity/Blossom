@@ -13,5 +13,7 @@ data class DailyHabit(
     val isCompleted: Boolean = false,
     val isEnabled: Boolean = true,
     val streakCount: Int = 0,
-    val lastCompletedDate: Long = 0 // Timestamp of last completion
-) 
+    val longestStreak: Int = 0,
+    val lastCompletedDate: Long = 0, // Timestamp of last completion
+    val completionCount: Int = 0 // Total number of times the habit has been completed
+)

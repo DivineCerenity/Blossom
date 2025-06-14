@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.jonathon.blossom.ui.components.*
 import androidx.compose.animation.core.*
 import androidx.compose.ui.graphics.graphicsLayer
@@ -91,6 +92,14 @@ fun JournalListScreen(
     // 📱 BOTTOM SHEET STATE
     var showActionBottomSheet by remember { mutableStateOf(false) }
     var selectedEntryForAction by remember { mutableStateOf<JournalEntry?>(null) }
+
+    // 📱 SCROLL STATE MANAGEMENT - Always start at top when navigating to this screen
+    val listState = rememberLazyListState()
+    
+    // Reset scroll position to top when screen is navigated to
+    LaunchedEffect(Unit) {
+        listState.animateScrollToItem(0)
+    }
 
     Scaffold(
         topBar = {
@@ -264,9 +273,9 @@ fun JournalListScreen(
                         }
                     }
                 }
-            }
-            else -> {
+            }            else -> {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),

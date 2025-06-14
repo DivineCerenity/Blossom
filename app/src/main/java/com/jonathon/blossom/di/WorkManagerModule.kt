@@ -2,6 +2,7 @@ package com.jonathon.blossom.di
 
 import android.content.Context
 import androidx.work.WorkManager
+import com.jonathon.blossom.notifications.HabitReminderWorkerFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,6 +16,13 @@ object WorkManagerModule {
     @Provides
     @Singleton
     fun provideWorkManager(
-        @ApplicationContext context: Context
-    ): WorkManager = WorkManager.getInstance(context)
-} 
+        @ApplicationContext context: Context,
+        workerFactory: HabitReminderWorkerFactory
+    ): WorkManager {
+        val config = androidx.work.Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
+        WorkManager.initialize(context, config)
+        return WorkManager.getInstance(context)
+    }
+}

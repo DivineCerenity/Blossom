@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -35,6 +36,14 @@ fun AchievementsScreen(
     viewModel: InsightsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // 📱 SCROLL STATE MANAGEMENT - Always start at top when navigating to this screen
+    val listState = rememberLazyListState()
+    
+    // Reset scroll position to top when screen is navigated to
+    LaunchedEffect(Unit) {
+        listState.animateScrollToItem(0)
+    }
     
     // Group achievements by category
     val achievementsByCategory = uiState.achievements.groupBy { it.category }
@@ -77,6 +86,7 @@ fun AchievementsScreen(
                 )
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -190,6 +200,10 @@ fun AchievementCategorySection(
         AchievementCategory.DEDICATION_WARRIOR -> "⚔️ Dedication"
         AchievementCategory.MINDFULNESS_GURU -> "🧠 Mindfulness"
         AchievementCategory.SPIRITUAL_SEEKER -> "✨ Spiritual Journey"
+        AchievementCategory.HABIT_STREAK -> "🔥 Habit Streaks"
+        AchievementCategory.HABIT_COUNT -> "✅ Habit Completions"
+        AchievementCategory.HABIT_COMEBACK -> "🔄 Habit Comebacks"
+        AchievementCategory.MULTI_HABIT_STREAK -> "🌟 Multi-Habit Streaks"
     }
     
     Card(

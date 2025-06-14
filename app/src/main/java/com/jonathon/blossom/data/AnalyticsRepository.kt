@@ -342,7 +342,15 @@ class AnalyticsRepository @Inject constructor(
             // 🎨 EXPLORATION ACHIEVEMENTS
             Achievement("pattern_explorer", "Pattern Explorer", "Try different breathing patterns", "🌬️", null, AchievementCategory.PATTERN_EXPLORER, 1),
             Achievement("frequency_finder", "Frequency Finder", "Discover binaural beats", "🎵", null, AchievementCategory.FREQUENCY_FINDER, 1),
-            Achievement("theme_wanderer", "Theme Wanderer", "Explore different themes", "🎨", null, AchievementCategory.THEME_EXPLORER, 1)
+            Achievement("theme_wanderer", "Theme Wanderer", "Explore different themes", "🎨", null, AchievementCategory.THEME_EXPLORER, 1),
+
+            // --- HABIT ACHIEVEMENTS ---
+            Achievement("habit_first_completion", "First Habit Completion", "Complete a habit for the first time", "✅", null, AchievementCategory.HABIT_COUNT, 1),
+            Achievement("habit_7_day_streak", "7-Day Habit Streak", "Complete a habit 7 days in a row", "🔥", null, AchievementCategory.HABIT_STREAK, 7),
+            Achievement("habit_30_day_streak", "30-Day Habit Streak", "Complete a habit 30 days in a row", "🏆", null, AchievementCategory.HABIT_STREAK, 30),
+            Achievement("habit_100_completions", "100 Habit Completions", "Complete a habit 100 times", "💯", null, AchievementCategory.HABIT_COUNT, 100),
+            Achievement("habit_comeback", "Habit Comeback", "Restart a habit streak after breaking a 7+ day streak", "🔄", null, AchievementCategory.HABIT_COMEBACK, 1),
+            Achievement("multi_habit_streak", "Multi-Habit Streak", "Have 3+ habits with a 7+ day streak at once", "🌟", null, AchievementCategory.MULTI_HABIT_STREAK, 3)
         )
 
         achievements.forEach { achievement ->
@@ -464,6 +472,29 @@ class AnalyticsRepository @Inject constructor(
         }
 
         return newAchievements
+    }
+
+    /**
+     * Unlock an achievement by ID if not already unlocked
+     */
+    suspend fun unlockAchievement(achievementId: String) {
+        val achievement = analyticsDao.getAchievementById(achievementId)
+        if (achievement != null && achievement.unlockedAt == null) {
+            analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+        }
+    }
+
+    /**
+     * Unlock an achievement by ID and return it if it was newly unlocked
+     * Returns null if already unlocked or doesn't exist
+     */
+    suspend fun unlockAchievementAndReturn(achievementId: String): Achievement? {
+        val achievement = analyticsDao.getAchievementById(achievementId)
+        if (achievement != null && achievement.unlockedAt == null) {
+            analyticsDao.unlockAchievement(achievementId, System.currentTimeMillis())
+            return analyticsDao.getAchievementById(achievementId)
+        }
+        return null
     }
 
     private fun createMoodTrends(entries: List<JournalEntry>): List<MoodTrendData> {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.jonathon.blossom.ui.components.*
 import androidx.compose.animation.core.*
 import androidx.compose.ui.graphics.graphicsLayer
@@ -75,8 +76,12 @@ fun PrayerRequestsScreen(
         }
     }
 
-    // 📖 REFRESH VERSE WHEN SCREEN BECOMES VISIBLE
+    // 📱 SCROLL STATE MANAGEMENT - Always start at top when navigating to this screen
+    val listState = rememberLazyListState()
+    
+    // 📖 INITIALIZATION - Reset scroll position and refresh verse when screen is navigated to
     LaunchedEffect(Unit) {
+        listState.animateScrollToItem(0)
         dashboardViewModel.fetchVerse()
     }
     
@@ -258,7 +263,8 @@ fun PrayerRequestsScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    state = listState // Attach the scroll state here
                 ) {
                     if (sortedPrayerRequests.isNotEmpty()) {
                         item {

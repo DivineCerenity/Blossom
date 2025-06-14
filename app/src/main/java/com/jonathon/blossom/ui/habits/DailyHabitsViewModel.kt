@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jonathon.blossom.data.DailyHabit
 import com.jonathon.blossom.data.DailyHabitRepository
+import com.jonathon.blossom.data.Achievement
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,10 @@ class DailyHabitsViewModel @Inject constructor(
 
     private val _habits = MutableStateFlow<List<DailyHabit>>(emptyList())
     val habits: StateFlow<List<DailyHabit>> = _habits.asStateFlow()
+
+    // 🏆 Achievement celebration state
+    private val _newAchievements = MutableStateFlow<List<Achievement>>(emptyList())
+    val newAchievements: StateFlow<List<Achievement>> = _newAchievements.asStateFlow()
 
     fun loadHabits() {
         viewModelScope.launch {
@@ -49,7 +54,10 @@ class DailyHabitsViewModel @Inject constructor(
 
     fun completeHabit(habit: DailyHabit) {
         viewModelScope.launch {
-            repository.completeHabit(habit)
+            val newAchievements = repository.completeHabit(habit)
+            if (newAchievements.isNotEmpty()) {
+                _newAchievements.value = newAchievements
+            }
         }
     }
 
@@ -88,4 +96,11 @@ class DailyHabitsViewModel @Inject constructor(
             }
         }
     }
-} 
+
+    /**
+     * 🏆 Clear achievements after showing celebration
+     */
+    fun clearAchievements() {
+        _newAchievements.value = emptyList()
+    }
+}
