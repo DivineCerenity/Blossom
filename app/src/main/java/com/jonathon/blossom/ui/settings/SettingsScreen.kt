@@ -112,8 +112,8 @@ fun SettingsScreen(
                     userEmail = uiState.googleUserEmail,
                     onSignInClick = { viewModel.signInWithGoogle(launcher) },
                     onSignOutClick = { viewModel.signOutGoogle() },
-                    onBackupClick = { viewModel.triggerBackup() },
-                    onRestoreClick = { viewModel.triggerRestore() },
+                    onBackupClick = { viewModel.showBackupConfirmation() },
+                    onRestoreClick = { viewModel.showRestoreConfirmation() },
                     backupStatus = uiState.backupStatus,
                     restoreStatus = uiState.restoreStatus
                 )
@@ -144,13 +144,19 @@ fun SettingsScreen(
         )
     }
 
-    // === THEME RECREATION HANDLER ===
-    val context = LocalContext.current
-    LaunchedEffect(uiState.shouldRecreate) {
-        if (uiState.shouldRecreate) {
-            (context as? android.app.Activity)?.recreate()
-            viewModel.clearShouldRecreateFlag()
-        }
+    // === CONFIRMATION DIALOGS ===
+    if (uiState.showBackupConfirmation) {
+        BackupConfirmationDialog(
+            onConfirm = { viewModel.triggerBackup() },
+            onDismiss = { viewModel.hideBackupConfirmation() }
+        )
+    }
+
+    if (uiState.showRestoreConfirmation) {
+        RestoreConfirmationDialog(
+            onConfirm = { viewModel.triggerRestore() },
+            onDismiss = { viewModel.hideRestoreConfirmation() }
+        )
     }
 }
 
@@ -630,4 +636,90 @@ fun AppInfoSection(
             }
         }
     }
+}
+
+@Composable
+fun BackupConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Backup to Cloud",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "This will upload all your journal entries, prayers, meditation sessions, habits, achievements, and settings to Google Drive. This may take a few moments.\n\nAre you sure you want to continue?",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Backup")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun RestoreConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Restore from Cloud",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "This will replace ALL your current data with the backup from Google Drive. Your current journal entries, prayers, meditation sessions, habits, achievements, and settings will be overwritten.\n\n⚠️ This action cannot be undone!\n\nAre you sure you want to continue?",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudDownload,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Restore")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

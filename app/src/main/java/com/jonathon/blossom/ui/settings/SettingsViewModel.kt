@@ -18,6 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import android.util.Log
 import com.google.android.gms.drive.Drive // 🔧 Uncommented to enable Drive API
@@ -193,11 +194,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Trigger backup to Google Drive
+     * Trigger backup to Google Drive (called after confirmation)
      */
     fun triggerBackup() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(backupStatus = "Backing up...")
+            _uiState.value = _uiState.value.copy(
+                backupStatus = "Backing up...",
+                showBackupConfirmation = false
+            )
             val result = backupManager.performBackup()
             _uiState.value = _uiState.value.copy(
                 backupStatus = result.getOrNull() ?: "Backup failed: ${result.exceptionOrNull()?.message}"
@@ -206,19 +210,42 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Trigger restore from Google Drive
+     * Trigger restore from Google Drive (called after confirmation)
      */
     fun triggerRestore() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(restoreStatus = "Restoring...")
-            val result = backupManager.performRestore()
-            // Reload settings from SharedPreferences after restore
-            loadSettings()
-            Log.i("SettingsViewModel", "Settings reloaded and theme/dark mode reapplied after restore.")
             _uiState.value = _uiState.value.copy(
-                restoreStatus = result.getOrNull() ?: "Restore failed: ${result.exceptionOrNull()?.message}",
-                shouldRecreate = true // Signal UI to recreate
+                restoreStatus = "Restoring...",
+                showRestoreConfirmation = false
             )
+            val result = backupManager.performRestore()
+
+            // Reload settings from SharedPreferences after restore
+            settingsRepository.reloadFromSharedPreferences()
+
+            // Small delay to ensure StateFlows are updated
+            kotlinx.coroutines.delay(100)
+
+            // Update UI state with the reloaded values
+            _uiState.value = _uiState.value.copy(
+                selectedTheme = settingsRepository.getSelectedTheme().first(),
+                isDarkMode = settingsRepository.getDarkMode().first(),
+                habitResetTime = settingsRepository.getHabitResetTime().first()
+            )
+
+            Log.i("SettingsViewModel", "Settings reloaded and theme/dark mode reapplied after restore.")
+
+            // Force complete recomposition with new theme refresh key
+            triggerThemeRefresh()
+
+            // Small delay before final status update to ensure theme is applied
+            kotlinx.coroutines.delay(200)
+
+            _uiState.value = _uiState.value.copy(
+                restoreStatus = result.getOrNull() ?: "Restore failed: ${result.exceptionOrNull()?.message}"
+            )
+
+            Log.i("SettingsViewModel", "Theme refresh completed after restore.")
         }
     }
     
@@ -235,10 +262,38 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Clear the shouldRecreate flag
-     * Call this after recreating the activity
+     * Show backup confirmation dialog
      */
-    fun clearShouldRecreateFlag() {
-        _uiState.value = _uiState.value.copy(shouldRecreate = false)
+    fun showBackupConfirmation() {
+        _uiState.value = _uiState.value.copy(showBackupConfirmation = true)
+    }
+
+    /**
+     * Hide backup confirmation dialog
+     */
+    fun hideBackupConfirmation() {
+        _uiState.value = _uiState.value.copy(showBackupConfirmation = false)
+    }
+
+    /**
+     * Show restore confirmation dialog
+     */
+    fun showRestoreConfirmation() {
+        _uiState.value = _uiState.value.copy(showRestoreConfirmation = true)
+    }
+
+    /**
+     * Hide restore confirmation dialog
+     */
+    fun hideRestoreConfirmation() {
+        _uiState.value = _uiState.value.copy(showRestoreConfirmation = false)
+    }
+
+    /**
+     * Trigger a theme refresh
+     * Call this to update themeRefreshKey and force recomposition
+     */
+    fun triggerThemeRefresh() {
+        _uiState.value = _uiState.value.copy(themeRefreshKey = System.currentTimeMillis())
     }
 }

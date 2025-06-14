@@ -56,15 +56,14 @@ fun BlossomApp(
     onDarkModeChanged: (Boolean) -> Unit = {}
 ) {
     val navController = rememberNavController()
-
-    // Get current theme for dynamic gradient text
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val settingsUiState by settingsViewModel.uiState.collectAsState()
 
-    // Shared state for triggering add dialogs
-    var triggerAddPrayer by remember { mutableStateOf(false) }
+    key(settingsUiState.themeRefreshKey) {
+        // Shared state for triggering add dialogs
+        var triggerAddPrayer by remember { mutableStateOf(false) }
 
-    Scaffold(
+        Scaffold(
             topBar = {
                 // Use CenterAlignedTopAppBar for a centered title
                 CenterAlignedTopAppBar(
@@ -103,7 +102,8 @@ fun BlossomApp(
                     val currentRoute = currentDestination?.route
 
                     bottomNavItems.forEach { screen ->
-                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        val isSelected =
+                            currentDestination?.hierarchy?.any { it.route == screen.route } == true
 
                         // Special handling for Journal, Habits, and Prayers tabs when selected
                         if ((screen == Screen.JournalList || screen == Screen.Habits || screen == Screen.Prayers) && isSelected) {
@@ -144,12 +144,15 @@ fun BlossomApp(
                                         Screen.JournalList -> {
                                             navController.navigate(Screen.AddEditJournal.route)
                                         }
+
                                         Screen.Habits -> {
                                             navController.navigate("addHabit")
                                         }
+
                                         Screen.Prayers -> {
                                             triggerAddPrayer = true
                                         }
+
                                         else -> {}
                                     }
                                 }
@@ -179,136 +182,141 @@ fun BlossomApp(
                     }
                 }
             }
-    ) { innerPadding ->
-        NavHost(navController, startDestination = Screen.Insights.route, Modifier.padding(innerPadding)) {
-            composable(Screen.Home.route) {
-                DashboardScreen()  // Keep for settings navigation
-            }
-            composable(Screen.Meditate.route) {
-                MeditateScreen()
-            }
-            composable(Screen.Habits.route) {
-                DailyHabitsScreen(
-                    onNavigateToAddHabit = { navController.navigate("addHabit") },
-                    onNavigateToEditHabit = { habitId -> navController.navigate("editHabit/$habitId") }
-                )
-            }
-            composable(Screen.Insights.route) {
-                InsightsScreen(
-                    onNavigateToMilestones = { navController.navigate("achievements") }
-                )  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
-            }
-            composable(Screen.Prayers.route) {
-                PrayerRequestsScreen(
-                    addPrayerTrigger = triggerAddPrayer,
-                    onAddPrayerTriggered = { triggerAddPrayer = false }
-                )
-            }
-
-            composable(Screen.Settings.route) {
-                SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onThemeChanged = onThemeChanged,
-                    selectedTheme = selectedTheme,
-                    isDarkMode = isDarkMode,
-                    onDarkModeChanged = onDarkModeChanged,
-                    onNavigateToAbout = { navController.navigate("about") }
-                )
-            }
-
-            composable("about") {
-                AboutScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    selectedTheme = selectedTheme
-                )
-            }
-
-            composable("achievements") {
-                com.jonathon.blossom.ui.achievements.AchievementsScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("addHabit") {
-                AddEditHabitScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    habitId = null
-                )
-            }
-
-            composable(
-                route = "editHabit/{habitId}",
-                arguments = listOf(
-                    navArgument("habitId") {
-                        type = NavType.IntType
-                    }
-                )
-            ) { backStackEntry ->
-                val habitId = backStackEntry.arguments?.getInt("habitId") ?: -1
-                AddEditHabitScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    habitId = habitId
-                )
-            }
-
-            composable(Screen.JournalList.route) {
-                val viewModel: JournalListViewModel = hiltViewModel()
-                JournalListScreen(
-                    viewModel = viewModel,
-                    onNavigateToAddEntry = {
-                        navController.navigate(Screen.AddEditJournal.route)
-                    },
-                    onNavigateToEditEntry = { entryId ->
-                        // Use Screen.AddEditJournal.route for consistency and append query parameter
-                        navController.navigate(Screen.AddEditJournal.route + "?entryId=$entryId")
-                    }
-                )
-            }
-
-            composable(
-                // Use Screen.AddEditJournal.route and append optional query parameter for entryId
-                route = Screen.AddEditJournal.route + "?entryId={entryId}",
-                arguments = listOf(
-                    navArgument("entryId") {
-                        type = NavType.IntType
-                        defaultValue = -1
-                    }
-                )
-            ) { backStackEntry ->
-                val entryId = backStackEntry.arguments?.getInt("entryId") ?: -1
-                val viewModel: JournalViewModel = hiltViewModel()
-
-                LaunchedEffect(key1 = entryId) {
-                    if (entryId != -1) {
-                        viewModel.loadEntry(entryId)
-                    }
+        ) { innerPadding ->
+            NavHost(
+                navController,
+                startDestination = Screen.Insights.route,
+                Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.Home.route) {
+                    DashboardScreen()  // Keep for settings navigation
+                }
+                composable(Screen.Meditate.route) {
+                    MeditateScreen()
+                }
+                composable(Screen.Habits.route) {
+                    DailyHabitsScreen(
+                        onNavigateToAddHabit = { navController.navigate("addHabit") },
+                        onNavigateToEditHabit = { habitId -> navController.navigate("editHabit/$habitId") }
+                    )
+                }
+                composable(Screen.Insights.route) {
+                    InsightsScreen(
+                        onNavigateToMilestones = { navController.navigate("achievements") }
+                    )  // 📊 BEAUTIFUL NEW INSIGHTS SCREEN!
+                }
+                composable(Screen.Prayers.route) {
+                    PrayerRequestsScreen(
+                        addPrayerTrigger = triggerAddPrayer,
+                        onAddPrayerTriggered = { triggerAddPrayer = false }
+                    )
                 }
 
-                val newAchievements by viewModel.newAchievements.collectAsState()
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onThemeChanged = onThemeChanged,
+                        selectedTheme = selectedTheme,
+                        isDarkMode = isDarkMode,
+                        onDarkModeChanged = onDarkModeChanged,
+                        onNavigateToAbout = { navController.navigate("about") }
+                    )
+                }
 
-                AddEditJournalScreen(
-                    uiState = viewModel.uiState.collectAsState().value,
-                    onTitleChanged = viewModel::onTitleChanged,
-                    onContentChanged = viewModel::onContentChanged,
-                    onMoodSelected = viewModel::onMoodSelected,
-                    onImageUriChanged = viewModel::onImageUriChanged,
-                    onAddImage = viewModel::onAddImage,
-                    onDeleteImage = viewModel::onDeleteImage,
-                    onSetFeaturedImage = viewModel::onSetFeaturedImage,
-                    saveJournalEntry = viewModel::saveJournalEntry,
-                    eventHandled = viewModel::eventHandled,
-                    onNavigateBack = { navController.popBackStack() },
-                    isEditing = entryId != -1
-                )
+                composable("about") {
+                    AboutScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        selectedTheme = selectedTheme
+                    )
+                }
 
-                // 🏆 ACHIEVEMENT CELEBRATION
-                if (newAchievements.isNotEmpty()) {
-                    AchievementCelebrationManager(
-                        achievements = newAchievements,
-                        onAllDismissed = {
-                            viewModel.clearAchievements()
+                composable("achievements") {
+                    com.jonathon.blossom.ui.achievements.AchievementsScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable("addHabit") {
+                    AddEditHabitScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        habitId = null
+                    )
+                }
+
+                composable(
+                    route = "editHabit/{habitId}",
+                    arguments = listOf(
+                        navArgument("habitId") {
+                            type = NavType.IntType
                         }
                     )
+                ) { backStackEntry ->
+                    val habitId = backStackEntry.arguments?.getInt("habitId") ?: -1
+                    AddEditHabitScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        habitId = habitId
+                    )
+                }
+
+                composable(Screen.JournalList.route) {
+                    val viewModel: JournalListViewModel = hiltViewModel()
+                    JournalListScreen(
+                        viewModel = viewModel,
+                        onNavigateToAddEntry = {
+                            navController.navigate(Screen.AddEditJournal.route)
+                        },
+                        onNavigateToEditEntry = { entryId ->
+                            // Use Screen.AddEditJournal.route for consistency and append query parameter
+                            navController.navigate(Screen.AddEditJournal.route + "?entryId=$entryId")
+                        }
+                    )
+                }
+
+                composable(
+                    // Use Screen.AddEditJournal.route and append optional query parameter for entryId
+                    route = Screen.AddEditJournal.route + "?entryId={entryId}",
+                    arguments = listOf(
+                        navArgument("entryId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { backStackEntry ->
+                    val entryId = backStackEntry.arguments?.getInt("entryId") ?: -1
+                    val viewModel: JournalViewModel = hiltViewModel()
+
+                    LaunchedEffect(key1 = entryId) {
+                        if (entryId != -1) {
+                            viewModel.loadEntry(entryId)
+                        }
+                    }
+
+                    val newAchievements by viewModel.newAchievements.collectAsState()
+
+                    AddEditJournalScreen(
+                        uiState = viewModel.uiState.collectAsState().value,
+                        onTitleChanged = viewModel::onTitleChanged,
+                        onContentChanged = viewModel::onContentChanged,
+                        onMoodSelected = viewModel::onMoodSelected,
+                        onImageUriChanged = viewModel::onImageUriChanged,
+                        onAddImage = viewModel::onAddImage,
+                        onDeleteImage = viewModel::onDeleteImage,
+                        onSetFeaturedImage = viewModel::onSetFeaturedImage,
+                        saveJournalEntry = viewModel::saveJournalEntry,
+                        eventHandled = viewModel::eventHandled,
+                        onNavigateBack = { navController.popBackStack() },
+                        isEditing = entryId != -1
+                    )
+
+                    // 🏆 ACHIEVEMENT CELEBRATION
+                    if (newAchievements.isNotEmpty()) {
+                        AchievementCelebrationManager(
+                            achievements = newAchievements,
+                            onAllDismissed = {
+                                viewModel.clearAchievements()
+                            }
+                        )
+                    }
                 }
             }
         }

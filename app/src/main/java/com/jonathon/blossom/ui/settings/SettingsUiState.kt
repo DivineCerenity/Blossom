@@ -8,5 +8,7 @@ data class SettingsUiState(
     val backupStatus: String = "",
     val restoreStatus: String = "",
     val habitResetTime: Int = 0, // Default to midnight (0:00)
-    val shouldRecreate: Boolean = false // Triggers UI recreation after restore
+    val themeRefreshKey: Long = System.currentTimeMillis(), // Used to force full recomposition after restore
+    val showBackupConfirmation: Boolean = false, // Show backup confirmation dialog
+    val showRestoreConfirmation: Boolean = false // Show restore confirmation dialog
 )

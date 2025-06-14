@@ -69,4 +69,14 @@ class SettingsRepository @Inject constructor(
             .apply()
         _habitResetTime.value = hour
     }
+
+    /**
+     * Reload all settings from SharedPreferences
+     * Call this after restoring settings from cloud backup
+     */
+    suspend fun reloadFromSharedPreferences() {
+        _selectedTheme.value = loadSelectedTheme()
+        _isDarkMode.value = loadDarkMode()
+        _habitResetTime.value = loadHabitResetTime()
+    }
 }

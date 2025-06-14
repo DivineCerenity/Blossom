@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel // IMPORTANT import
 import com.jonathon.blossom.ui.dashboard.DashboardViewModel
@@ -50,11 +51,14 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = viewModel()
             val settingsUiState by settingsViewModel.uiState.collectAsState()
 
-            BlossomTheme(
-                darkTheme = settingsUiState.isDarkMode,
-                selectedTheme = settingsUiState.selectedTheme
-            ) {
-                BlossomApp()
+            // Force recomposition when theme changes using the refresh key
+            key(settingsUiState.themeRefreshKey) {
+                BlossomTheme(
+                    darkTheme = settingsUiState.isDarkMode,
+                    selectedTheme = settingsUiState.selectedTheme
+                ) {
+                    BlossomApp()
+                }
             }
         }
     }
