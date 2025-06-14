@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import com.jonathon.blossom.ui.components.AchievementCelebrationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,6 +142,15 @@ fun SettingsScreen(
                 viewModel.clearAchievements()
             }
         )
+    }
+
+    // === THEME RECREATION HANDLER ===
+    val context = LocalContext.current
+    LaunchedEffect(uiState.shouldRecreate) {
+        if (uiState.shouldRecreate) {
+            (context as? android.app.Activity)?.recreate()
+            viewModel.clearShouldRecreateFlag()
+        }
     }
 }
 

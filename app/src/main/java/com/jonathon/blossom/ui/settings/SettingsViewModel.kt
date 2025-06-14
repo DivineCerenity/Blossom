@@ -212,8 +212,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(restoreStatus = "Restoring...")
             val result = backupManager.performRestore()
+            // Reload settings from SharedPreferences after restore
+            loadSettings()
+            Log.i("SettingsViewModel", "Settings reloaded and theme/dark mode reapplied after restore.")
             _uiState.value = _uiState.value.copy(
-                restoreStatus = result.getOrNull() ?: "Restore failed: ${result.exceptionOrNull()?.message}"
+                restoreStatus = result.getOrNull() ?: "Restore failed: ${result.exceptionOrNull()?.message}",
+                shouldRecreate = true // Signal UI to recreate
             )
         }
     }
@@ -228,5 +232,13 @@ class SettingsViewModel @Inject constructor(
             // Reschedule the daily reset with the new time
             habitResetScheduler.scheduleReset()
         }
+    }
+
+    /**
+     * Clear the shouldRecreate flag
+     * Call this after recreating the activity
+     */
+    fun clearShouldRecreateFlag() {
+        _uiState.value = _uiState.value.copy(shouldRecreate = false)
     }
 }

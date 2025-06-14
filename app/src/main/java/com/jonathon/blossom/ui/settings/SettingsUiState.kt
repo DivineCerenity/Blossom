@@ -7,5 +7,6 @@ data class SettingsUiState(
     val googleUserEmail: String? = null,
     val backupStatus: String = "",
     val restoreStatus: String = "",
-    val habitResetTime: Int = 0 // Default to midnight (0:00)
+    val habitResetTime: Int = 0, // Default to midnight (0:00)
+    val shouldRecreate: Boolean = false // Triggers UI recreation after restore
 )

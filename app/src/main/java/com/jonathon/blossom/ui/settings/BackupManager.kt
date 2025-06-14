@@ -16,6 +16,7 @@ import com.jonathon.blossom.network.FileMetadata
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -64,12 +65,9 @@ class BackupManager @Inject constructor(
             for (entry in journalEntries) {
                 Log.d(TAG, "Entry ${entry.id}: title='${entry.title}', imageUrl='${entry.imageUrl}', featuredImageUrl='${entry.featuredImageUrl}', imageUrls='${entry.imageUrls}'")
             }
-
             val journalJson = moshi.adapter<List<JournalEntry>>(Types.newParameterizedType(List::class.java, JournalEntry::class.java)).toJson(journalEntries)
             Log.d(TAG, "Journal JSON size: ${journalJson.length} characters")
             uploadFileToDrive(authHeader, "journal_backup.json", journalJson)
-
-            // Backup Journal Photos
             backupJournalPhotos(authHeader, journalEntries)
 
             // Backup Prayer Requests
@@ -77,10 +75,30 @@ class BackupManager @Inject constructor(
             val prayerJson = moshi.adapter<List<PrayerRequest>>(Types.newParameterizedType(List::class.java, PrayerRequest::class.java)).toJson(prayerRequests)
             uploadFileToDrive(authHeader, "prayer_backup.json", prayerJson)
 
-            // Backup Meditation Sessions (for Insights Statistics)
+            // Backup Meditation Sessions
             val meditationSessions = database.analyticsDao().getAllSessionsSync()
             val meditationJson = moshi.adapter<List<MeditationSession>>(Types.newParameterizedType(List::class.java, MeditationSession::class.java)).toJson(meditationSessions)
             uploadFileToDrive(authHeader, "meditation_backup.json", meditationJson)
+
+            // Backup Habits
+            val habits = database.dailyHabitDao().getAllHabits().first()
+            val habitsJson = moshi.adapter<List<com.jonathon.blossom.data.DailyHabit>>(Types.newParameterizedType(List::class.java, com.jonathon.blossom.data.DailyHabit::class.java)).toJson(habits)
+            uploadFileToDrive(authHeader, "habits_backup.json", habitsJson)
+
+            // Backup Achievements
+            val achievements = database.analyticsDao().getAllAchievements().first()
+            val achievementsJson = moshi.adapter<List<com.jonathon.blossom.data.Achievement>>(Types.newParameterizedType(List::class.java, com.jonathon.blossom.data.Achievement::class.java)).toJson(achievements)
+            uploadFileToDrive(authHeader, "achievements_backup.json", achievementsJson)
+
+            // Backup User Settings
+            val sharedPreferences = context.getSharedPreferences("blossom_settings", Context.MODE_PRIVATE)
+            val settingsMap = mapOf(
+                "selected_theme" to sharedPreferences.getString("selected_theme", null),
+                "dark_mode" to sharedPreferences.getBoolean("dark_mode", false),
+                "habit_reset_time" to sharedPreferences.getInt("habit_reset_time", 0)
+            )
+            val settingsJson = moshi.adapter<Map<String, Any?>>(Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)).toJson(settingsMap)
+            uploadFileToDrive(authHeader, "settings_backup.json", settingsJson)
 
             Log.i(TAG, "Backup completed successfully with REST API")
             return@withContext Result.success("Backup completed successfully")
@@ -157,7 +175,7 @@ class BackupManager @Inject constructor(
                 Log.w(TAG, "prayer_backup.json not found on Drive")
             }
 
-            // Restore Meditation Sessions (for Insights Statistics)
+            // Restore Meditation Sessions
             val meditationJson = downloadFileFromDrive(authHeader, "meditation_backup.json")
             if (meditationJson != null) {
                 Log.d(TAG, "Meditation JSON content: ${meditationJson.take(200)}...")
@@ -172,6 +190,65 @@ class BackupManager @Inject constructor(
                 }
             } else {
                 Log.w(TAG, "meditation_backup.json not found on Drive")
+            }
+
+            // Restore Habits
+            val habitsJson = downloadFileFromDrive(authHeader, "habits_backup.json")
+            if (habitsJson != null) {
+                Log.d(TAG, "Habits JSON content: ${habitsJson.take(200)}...")
+                val habits = moshi.adapter<List<com.jonathon.blossom.data.DailyHabit>>(Types.newParameterizedType(List::class.java, com.jonathon.blossom.data.DailyHabit::class.java)).fromJson(habitsJson)
+                if (habits != null && habits.isNotEmpty()) {
+                    for (habit in habits) {
+                        database.dailyHabitDao().insert(habit)
+                    }
+                    totalRestored += habits.size
+                    restoredItems.add("${habits.size} habits")
+                    Log.i(TAG, "Restored ${habits.size} habits")
+                } else {
+                    Log.w(TAG, "No habits found in backup or failed to parse")
+                }
+            } else {
+                Log.w(TAG, "habits_backup.json not found on Drive")
+            }
+
+            // Restore Achievements
+            val achievementsJson = downloadFileFromDrive(authHeader, "achievements_backup.json")
+            if (achievementsJson != null) {
+                Log.d(TAG, "Achievements JSON content: ${achievementsJson.take(200)}...")
+                val achievements = moshi.adapter<List<com.jonathon.blossom.data.Achievement>>(Types.newParameterizedType(List::class.java, com.jonathon.blossom.data.Achievement::class.java)).fromJson(achievementsJson)
+                if (achievements != null && achievements.isNotEmpty()) {
+                    for (achievement in achievements) {
+                        database.analyticsDao().insertOrUpdateAchievement(achievement)
+                    }
+                    totalRestored += achievements.size
+                    restoredItems.add("${achievements.size} achievements")
+                    Log.i(TAG, "Restored ${achievements.size} achievements")
+                } else {
+                    Log.w(TAG, "No achievements found in backup or failed to parse")
+                }
+            } else {
+                Log.w(TAG, "achievements_backup.json not found on Drive")
+            }
+
+            // Restore User Settings
+            val settingsJson = downloadFileFromDrive(authHeader, "settings_backup.json")
+            if (settingsJson != null) {
+                Log.d(TAG, "Settings JSON content: ${settingsJson.take(200)}...")
+                val settingsMap = moshi.adapter<Map<String, Any>>(Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java)).fromJson(settingsJson)
+                if (settingsMap != null) {
+                    val sharedPreferences = context.getSharedPreferences("blossom_settings", Context.MODE_PRIVATE)
+                    val editor = sharedPreferences.edit()
+                    (settingsMap["selected_theme"] as? String)?.let { editor.putString("selected_theme", it) }
+                    (settingsMap["dark_mode"] as? Boolean)?.let { editor.putBoolean("dark_mode", it) }
+                    (settingsMap["habit_reset_time"] as? Double)?.let { editor.putInt("habit_reset_time", it.toInt()) } // Moshi may decode numbers as Double
+                    editor.apply()
+                    restoredItems.add("user settings")
+                    Log.i(TAG, "Restored user settings: selected_theme='${settingsMap["selected_theme"]}', dark_mode='${settingsMap["dark_mode"]}', habit_reset_time='${settingsMap["habit_reset_time"]}'")
+                } else {
+                    Log.w(TAG, "Failed to parse settings data")
+                }
+            } else {
+                Log.w(TAG, "settings_backup.json not found on Drive")
             }
 
             val resultMessage = if (totalRestored > 0) {
@@ -545,16 +622,15 @@ class BackupManager @Inject constructor(
 
             val base64Image = photoData["imageData"] ?: return null
             val originalPath = photoData["originalPath"] ?: return null
+            val originalFileName = photoData["fileName"] ?: "restored_photo.jpg"
 
             // Decode Base64 to bytes
             val imageBytes = Base64.decode(base64Image, Base64.DEFAULT)
 
-            // Create new file in app's pictures directory with unique name
-            val uri = Uri.parse(originalPath)
-            val originalFile = File(uri.path ?: return null)
+            // Create new file in app's pictures directory with a single 'restored_' prefix and timestamp
             val restoredFile = File(
                 context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES),
-                "restored_${System.currentTimeMillis()}_${originalFile.name}"
+                "restored_${System.currentTimeMillis()}_${originalFileName}"
             )
 
             // Ensure directory exists
