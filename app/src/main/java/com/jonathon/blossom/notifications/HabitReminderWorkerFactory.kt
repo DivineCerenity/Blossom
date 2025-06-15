@@ -18,7 +18,7 @@ class HabitReminderWorkerFactory @Inject constructor(
             HabitReminderWorker::class.java.name ->
                 HabitReminderWorker(appContext, workerParameters)
             DailyHabitResetWorker::class.java.name ->
-                DailyHabitResetWorker(appContext, workerParameters, habitRepository)
+                DailyHabitResetWorker(appContext, workerParameters)
             else -> null
         }
     }

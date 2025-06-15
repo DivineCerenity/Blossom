@@ -296,4 +296,13 @@ class SettingsViewModel @Inject constructor(
     fun triggerThemeRefresh() {
         _uiState.value = _uiState.value.copy(themeRefreshKey = System.currentTimeMillis())
     }
+
+    /**
+     * Manually trigger a habit reset for testing
+     */
+    fun testHabitReset() {
+        viewModelScope.launch {
+            habitResetScheduler.testHabitReset()
+        }
+    }
 }
