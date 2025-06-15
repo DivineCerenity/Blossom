@@ -4,25 +4,21 @@ enum class AppTheme(
     val displayName: String,
     val description: String
 ) {
-    COASTAL_SERENITY(
-        displayName = "Coastal Serenity",
-        description = "Sophisticated blues flowing to warm earth tones - perfect for peaceful reflection"
+    AURORA_DREAMS(
+        displayName = "Aurora Dreams",
+        description = "Cosmic purples to ethereal mint - magical and transcendent"
     ),
     AUTUMN_HARVEST(
         displayName = "Autumn Harvest",
         description = "Rich terracotta to sage greens - grounding and natural"
     ),
-    AURORA_DREAMS(
-        displayName = "Aurora Dreams",
-        description = "Cosmic purples to ethereal mint - magical and transcendent"
+    COASTAL_SERENITY(
+        displayName = "Coastal Serenity",
+        description = "Sophisticated blues flowing to warm earth tones - perfect for peaceful reflection"
     ),
-    SAKURA_WHISPER(
-        displayName = "Sakura Whisper",
-        description = "Gentle cherry blossom pinks to warm creams - serene and nurturing"
-    ),
-    OCEAN_DEPTHS(
-        displayName = "Ocean Depths",
-        description = "Deep teals to seafoam greens - mysterious and refreshing"
+    FOREST_WHISPER(
+        displayName = "Forest Whisper",
+        description = "Deep emeralds to soft moss - grounding and natural"
     ),
     GOLDEN_HOUR(
         displayName = "Golden Hour",
@@ -32,9 +28,13 @@ enum class AppTheme(
         displayName = "Moonlit Garden",
         description = "Silver blues to lavender mists - ethereal and dreamy"
     ),
-    FOREST_WHISPER(
-        displayName = "Forest Whisper",
-        description = "Deep emeralds to soft moss - grounding and natural"
+    OCEAN_DEPTHS(
+        displayName = "Ocean Depths",
+        description = "Deep teals to seafoam greens - mysterious and refreshing"
+    ),
+    SAKURA_WHISPER(
+        displayName = "Sakura Whisper",
+        description = "Gentle cherry blossom pinks to warm creams - serene and nurturing"
     ),
     SERENE_LOTUS(
         displayName = "Serene Lotus",

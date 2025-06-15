@@ -73,7 +73,7 @@ private val BlossomShapes = Shapes(
 @Composable
 fun BlossomTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    selectedTheme: com.jonathon.blossom.ui.settings.AppTheme = com.jonathon.blossom.ui.settings.AppTheme.TWILIGHT_MYSTIQUE,
+    selectedTheme: com.jonathon.blossom.ui.settings.AppTheme = com.jonathon.blossom.ui.settings.AppTheme.COASTAL_SERENITY,
     // Disable dynamic color to ensure consistent mindful theme
     dynamicColor: Boolean = false,
     // Immersive mode options
